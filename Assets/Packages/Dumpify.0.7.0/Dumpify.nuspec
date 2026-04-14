@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Dumpify</id>
+    <version>0.7.0</version>
+    <title>Dumpify</title>
+    <authors>Moaid Hathot</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>Dumpify-logo-styled.png</icon>
+    <readme>readme.md</readme>
+    <iconUrl>https://raw.githubusercontent.com/MoaidHathot/Dumpify/master/images/icon?sanitize=true</iconUrl>
+    <description>A library that can dump any object to the console in a readable, structured way. No need for overriding `ToString`.</description>
+    <releaseNotes>See https://github.com/MoaidHathot/Dumpify/releases/tag/0.7.0</releaseNotes>
+    <copyright>@ Moaid Hathot. All rights reserved.</copyright>
+    <repository type="git" url="https://github.com/MoaidHathot/Dumpify" branch="main" commit="6d093827938b1a8ae5e698031ac31e01a48f8f8e" />
+    <dependencies>
+      <group targetFramework="net6.0">
+        <dependency id="Spectre.Console" version="0.49.1" exclude="Build,Analyzers" />
+        <dependency id="System.Collections.Immutable" version="8.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net10.0">
+        <dependency id="Spectre.Console" version="0.49.1" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Spectre.Console" version="0.49.1" exclude="Build,Analyzers" />
+        <dependency id="System.Collections.Immutable" version="8.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.1">
+        <dependency id="Spectre.Console" version="0.49.1" exclude="Build,Analyzers" />
+        <dependency id="System.Collections.Immutable" version="8.0.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

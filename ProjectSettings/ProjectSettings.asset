@@ -601,7 +601,7 @@ PlayerSettings:
   webGLDecompressionFallback: 0
   webGLPowerPreference: 2
   scriptingDefineSymbols:
-    Standalone: ENABLE_STUI_DEBUG_LOGS
+    Standalone: xxxENABLE_STUI_DEBUG_LOGS
   additionalCompilerArguments: {}
   platformArchitecture:
     iOS: 2
