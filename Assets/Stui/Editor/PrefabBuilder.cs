@@ -17,7 +17,7 @@ namespace Spriter2UnityDX.Prefabs
 {
     using Importing;
     using Animations;
-    using Entity;
+    using EntityInfo;
 
     using UnityEngine.Rendering;
     using Spriter2UnityDX.Extensions;
@@ -1064,7 +1064,7 @@ namespace Spriter2UnityDX.Prefabs
             }
         }
 
-        private Sprite GetSpriteAtPath(string path)
+        public static Sprite GetSpriteAtPath(string path)
         {
             Sprite result = (Sprite)AssetDatabase.LoadAssetAtPath(path, typeof(Sprite));
             if (result == null)

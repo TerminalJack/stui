@@ -16,6 +16,8 @@ namespace Spriter2UnityDX.Importing
         List<string> ImportedPrefabs { get; }
 
         bool IsCanceled { get; }
+
+        public void Cancel();
     }
 
     public class BuildMonitorWindow : EditorWindow, IBuildTaskContext
@@ -35,6 +37,8 @@ namespace Spriter2UnityDX.Importing
         public List<string> ImportedPrefabs => _importedPrefabs;
 
         private static readonly double _maxTaskTimePerFrame_s = 0.013;
+
+        public void Cancel() => _isCanceled = true;
 
         public string MessagePrefix
         {

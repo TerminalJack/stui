@@ -16,7 +16,7 @@ using Object = UnityEngine.Object;
 namespace Spriter2UnityDX.Animations
 {
     using Importing;
-    using Entity;
+    using EntityInfo;
 
     public class AnimationBuilder : UnityEngine.Object
     {

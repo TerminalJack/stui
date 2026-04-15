@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Spriter2UnityDX.Entity
+namespace Spriter2UnityDX.EntityInfo
 {
     using Importing;
     using UnityEditor;
@@ -27,8 +27,11 @@ namespace Spriter2UnityDX.Entity
             public List<string> parentBoneNames = new List<string>(); // Empty if there aren't any.
 
             public Dictionary<int, SpriterVarDef> variableDefs = new Dictionary<int, SpriterVarDef>(); // Empty if there aren't any variables for this object.
+            public Dictionary<int, SpriterTagListItem> tagDefs = new Dictionary<int, SpriterTagListItem>(); // Empty if there aren't any tags for this object.
 
+            public bool HasMetadata { get { return HasVariables || HasTags;  } }
             public bool HasVariables { get { return variableDefs.Count > 0;  } }
+            public bool HasTags { get { return tagDefs.Count > 0; } }
 
             public SpriterInfoBase(string _name, ObjectType _type)
             {
@@ -501,9 +504,10 @@ namespace Spriter2UnityDX.Entity
 
         private void PreprocessEntityMetadata(ScmlObject scmlObj, Entity entity)
         {
-            // Populate variableDefs and tagDefs collections.  Variables can be defined at the entity level or at the
-            // timeline (bone, sprite, action point, event, etc.) level.  All tags are defined at the Spriter project
-            // level.
+            // Populate variableDefs and tagDefs collections.  Variables are defined at the entity level or at the
+            // timeline (bone, sprite, action point, event, etc.) level.  Tags are _defined_ at the entity level but
+            // they can be used in taglines at both the entity level and the timeline level--in which case they are
+            // separate tags that just happen to have the same name.
 
             if (entity.variableDefs.Count > 0)
             {
@@ -549,6 +553,8 @@ namespace Spriter2UnityDX.Entity
             {
                 Log($"Entity '{entity.name}' has no variable definitions.");
             }
+
+            // ! More work to be done.
 
             if (scmlObj.tags.Count > 0)
             {
