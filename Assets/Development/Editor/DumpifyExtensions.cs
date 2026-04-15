@@ -89,9 +89,17 @@ namespace Spriter2UnityDX.Extensions
 
                 if (shouldExpandLines)
                 {
+                    int lineCount = 0;
+
                     foreach (var line in dumpLines.Split("\n"))
                     {
                         Debug.Log(line); // Outputs a formatted table to the Unity Console
+
+                        if (++lineCount > 100)
+                        {
+                            yield return ""; // Don't log as a message.  Don't (unconditionally) wait for next frame.
+                            lineCount = 0;
+                        }
                     }
                 }
                 else
