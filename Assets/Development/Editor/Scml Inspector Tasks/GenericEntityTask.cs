@@ -8,7 +8,7 @@ namespace Spriter2UnityDX
     using EntityInfo;
     using Extensions;
 
-    [CreateAssetMenu(fileName = "NewGenericEntityTask", menuName = "Project Inspection Tasks/Generic Entity Task", order = 2)]
+    [CreateAssetMenu(fileName = "NewGenericEntityTask", menuName = "Inspection Tasks/Generic Entity Task", order = 2)]
     public class GenericEntityTask : ScmlInspectorEntityTask
     {
         public override IEnumerator ProcessEntity(ScmlObject scmlObject, SpriterEntityInfo entityInfo,

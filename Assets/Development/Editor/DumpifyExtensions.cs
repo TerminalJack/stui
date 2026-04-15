@@ -12,7 +12,7 @@ namespace Spriter2UnityDX.Extensions
 {
     public static class UnityDumpifyExtensions
     {
-        public static void DumpToUnityConsole<T>(this T obj, bool? expandLines = null,
+        public static void DumpToUnityConsole<T>(this T obj, bool? expandLines = null, string? linePrefix = null,
             string? label = null, int? maxDepth = null, IRenderer? renderer = null, bool? useDescriptors = null,
             ColorConfig? colors = null, MembersConfig? members = null, TypeNamingConfig? typeNames = null,
             TableConfig? tableConfig = null, OutputConfig? outputConfig = null,
@@ -26,9 +26,11 @@ namespace Spriter2UnityDX.Extensions
 
             if (shouldExpandLines)
             {
+                string prefix = linePrefix ?? "";
+
                 foreach (var line in dumpLines.Split("\n"))
                 {
-                    Debug.Log(line); // Outputs a formatted table to the Unity Console
+                    Debug.Log(prefix + line); // Outputs a formatted table to the Unity Console
                 }
             }
             else
@@ -37,7 +39,8 @@ namespace Spriter2UnityDX.Extensions
             }
         }
 
-        public static IEnumerator DumpToUnityConsoleRoutine<T>(this T obj, IBuildTaskContext ctx, bool? expandLines = null,
+        public static IEnumerator DumpToUnityConsoleRoutine<T>(this T obj, IBuildTaskContext ctx,
+            bool? expandLines = null, string? linePrefix = null,
             string? label = null, int? maxDepth = null, IRenderer? renderer = null, bool? useDescriptors = null,
             ColorConfig? colors = null, MembersConfig? members = null, TypeNamingConfig? typeNames = null,
             TableConfig? tableConfig = null, OutputConfig? outputConfig = null,
@@ -90,16 +93,19 @@ namespace Spriter2UnityDX.Extensions
                 if (shouldExpandLines)
                 {
                     int lineCount = 0;
+                    string prefix = linePrefix ?? "";
 
                     foreach (var line in dumpLines.Split("\n"))
                     {
-                        Debug.Log(line); // Outputs a formatted table to the Unity Console
+                        Debug.Log(prefix + line); // Outputs a formatted table to the Unity Console
 
                         if (++lineCount > 100)
                         {
                             yield return ""; // Don't log as a message.  Don't (unconditionally) wait for next frame.
                             lineCount = 0;
                         }
+
+                        if (ctx.IsCanceled) { yield break; }
                     }
                 }
                 else
