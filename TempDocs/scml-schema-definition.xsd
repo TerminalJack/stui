@@ -1,0 +1,446 @@
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="spriter_data">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="folder" maxOccurs="unbounded" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="file" maxOccurs="unbounded" minOccurs="0">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:string">
+                      <xs:attribute type="xs:byte" name="id" use="optional"/>
+                      <xs:attribute type="xs:string" name="name" use="optional"/>
+                      <xs:attribute type="xs:short" name="width" use="optional"/>
+                      <xs:attribute type="xs:short" name="height" use="optional"/>
+                      <xs:attribute type="xs:byte" name="pivot_x" use="optional"/>
+                      <xs:attribute type="xs:byte" name="pivot_y" use="optional"/>
+                      <xs:attribute type="xs:string" name="type" use="optional"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute type="xs:byte" name="id" use="optional"/>
+            <xs:attribute type="xs:string" name="name" use="optional"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="tag_list">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="i" maxOccurs="unbounded" minOccurs="0">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:string">
+                      <xs:attribute type="xs:byte" name="id" use="optional"/>
+                      <xs:attribute type="xs:string" name="name" use="optional"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="entity" maxOccurs="unbounded" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="obj_info" maxOccurs="unbounded" minOccurs="0">
+                <xs:complexType mixed="true">
+                  <xs:sequence>
+                    <xs:element name="var_defs" minOccurs="0">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="i" maxOccurs="unbounded" minOccurs="0">
+                            <xs:complexType>
+                              <xs:simpleContent>
+                                <xs:extension base="xs:string">
+                                  <xs:attribute type="xs:byte" name="id" use="optional"/>
+                                  <xs:attribute type="xs:string" name="name" use="optional"/>
+                                  <xs:attribute type="xs:string" name="type" use="optional"/>
+                                  <xs:attribute type="xs:string" name="default" use="optional"/>
+                                </xs:extension>
+                              </xs:simpleContent>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="frames" minOccurs="0">
+                      <xs:complexType mixed="true">
+                        <xs:sequence>
+                          <xs:element name="i" maxOccurs="unbounded" minOccurs="0">
+                            <xs:complexType>
+                              <xs:simpleContent>
+                                <xs:extension base="xs:string">
+                                  <xs:attribute type="xs:byte" name="folder" use="optional"/>
+                                  <xs:attribute type="xs:byte" name="file" use="optional"/>
+                                </xs:extension>
+                              </xs:simpleContent>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attribute type="xs:string" name="name" use="optional"/>
+                  <xs:attribute type="xs:string" name="type" use="optional"/>
+                  <xs:attribute type="xs:float" name="w" use="optional"/>
+                  <xs:attribute type="xs:float" name="h" use="optional"/>
+                  <xs:attribute type="xs:float" name="pivot_x" use="optional"/>
+                  <xs:attribute type="xs:float" name="pivot_y" use="optional"/>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="character_map" maxOccurs="unbounded" minOccurs="0">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="map" maxOccurs="unbounded" minOccurs="0">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:string">
+                            <xs:attribute type="xs:byte" name="folder" use="optional"/>
+                            <xs:attribute type="xs:byte" name="file" use="optional"/>
+                            <xs:attribute type="xs:byte" name="target_folder" use="optional"/>
+                            <xs:attribute type="xs:byte" name="target_file" use="optional"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attribute type="xs:byte" name="id" use="optional"/>
+                  <xs:attribute type="xs:string" name="name" use="optional"/>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="var_defs" minOccurs="0">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="i" maxOccurs="unbounded" minOccurs="0">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:string">
+                            <xs:attribute type="xs:byte" name="id" use="optional"/>
+                            <xs:attribute type="xs:string" name="name" use="optional"/>
+                            <xs:attribute type="xs:string" name="type" use="optional"/>
+                            <xs:attribute type="xs:string" name="default" use="optional"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="animation" maxOccurs="unbounded" minOccurs="0">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="gline" maxOccurs="unbounded" minOccurs="0">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:string">
+                            <xs:attribute type="xs:short" name="pos" use="optional"/>
+                            <xs:attribute type="xs:byte" name="v" use="optional"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="mainline">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="key" maxOccurs="unbounded" minOccurs="0">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="bone_ref" maxOccurs="unbounded" minOccurs="0">
+                                  <xs:complexType>
+                                    <xs:simpleContent>
+                                      <xs:extension base="xs:string">
+                                        <xs:attribute type="xs:byte" name="id" use="optional"/>
+                                        <xs:attribute type="xs:byte" name="timeline" use="optional"/>
+                                        <xs:attribute type="xs:byte" name="key" use="optional"/>
+                                        <xs:attribute type="xs:byte" name="parent" use="optional"/>
+                                      </xs:extension>
+                                    </xs:simpleContent>
+                                  </xs:complexType>
+                                </xs:element>
+                                <xs:element name="object_ref" maxOccurs="unbounded" minOccurs="0">
+                                  <xs:complexType>
+                                    <xs:simpleContent>
+                                      <xs:extension base="xs:string">
+                                        <xs:attribute type="xs:byte" name="id" use="optional"/>
+                                        <xs:attribute type="xs:byte" name="parent" use="optional"/>
+                                        <xs:attribute type="xs:byte" name="timeline" use="optional"/>
+                                        <xs:attribute type="xs:byte" name="key" use="optional"/>
+                                        <xs:attribute type="xs:byte" name="z_index" use="optional"/>
+                                      </xs:extension>
+                                    </xs:simpleContent>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                              <xs:attribute type="xs:byte" name="id" use="optional"/>
+                              <xs:attribute type="xs:short" name="time" use="optional"/>
+                              <xs:attribute type="xs:string" name="curve_type" use="optional"/>
+                              <xs:attribute type="xs:float" name="c1" use="optional"/>
+                              <xs:attribute type="xs:float" name="c2" use="optional"/>
+                              <xs:attribute type="xs:float" name="c3" use="optional"/>
+                              <xs:attribute type="xs:float" name="c4" use="optional"/>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="timeline" maxOccurs="unbounded" minOccurs="0">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="key" maxOccurs="unbounded" minOccurs="0">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="object" minOccurs="0">
+                                  <xs:complexType>
+                                    <xs:simpleContent>
+                                      <xs:extension base="xs:string">
+                                        <xs:attribute type="xs:byte" name="folder" use="optional"/>
+                                        <xs:attribute type="xs:byte" name="file" use="optional"/>
+                                        <xs:attribute type="xs:float" name="x" use="optional"/>
+                                        <xs:attribute type="xs:float" name="y" use="optional"/>
+                                        <xs:attribute type="xs:float" name="angle" use="optional"/>
+                                        <xs:attribute type="xs:float" name="scale_x" use="optional"/>
+                                        <xs:attribute type="xs:float" name="scale_y" use="optional"/>
+                                        <xs:attribute type="xs:byte" name="a" use="optional"/>
+                                      </xs:extension>
+                                    </xs:simpleContent>
+                                  </xs:complexType>
+                                </xs:element>
+                                <xs:element name="bone" minOccurs="0">
+                                  <xs:complexType>
+                                    <xs:simpleContent>
+                                      <xs:extension base="xs:string">
+                                        <xs:attribute type="xs:float" name="x" use="optional"/>
+                                        <xs:attribute type="xs:float" name="y" use="optional"/>
+                                        <xs:attribute type="xs:float" name="angle" use="optional"/>
+                                        <xs:attribute type="xs:float" name="scale_x" use="optional"/>
+                                        <xs:attribute type="xs:float" name="scale_y" use="optional"/>
+                                        <xs:attribute type="xs:byte" name="a" use="optional"/>
+                                      </xs:extension>
+                                    </xs:simpleContent>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                              <xs:attribute type="xs:byte" name="id" use="optional"/>
+                              <xs:attribute type="xs:byte" name="spin" use="optional"/>
+                              <xs:attribute type="xs:short" name="time" use="optional"/>
+                              <xs:attribute type="xs:string" name="curve_type" use="optional"/>
+                              <xs:attribute type="xs:float" name="c1" use="optional"/>
+                              <xs:attribute type="xs:float" name="c2" use="optional"/>
+                              <xs:attribute type="xs:float" name="c3" use="optional"/>
+                              <xs:attribute type="xs:float" name="c4" use="optional"/>
+                            </xs:complexType>
+                          </xs:element>
+                          <xs:element name="meta" minOccurs="0">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="varline" maxOccurs="unbounded" minOccurs="0">
+                                  <xs:complexType>
+                                    <xs:sequence>
+                                      <xs:element name="key" maxOccurs="unbounded" minOccurs="0">
+                                        <xs:complexType>
+                                          <xs:simpleContent>
+                                            <xs:extension base="xs:string">
+                                              <xs:attribute type="xs:byte" name="id" use="optional"/>
+                                              <xs:attribute type="xs:short" name="time" use="optional"/>
+                                              <xs:attribute type="xs:string" name="curve_type" use="optional"/>
+                                              <xs:attribute type="xs:float" name="c1" use="optional"/>
+                                              <xs:attribute type="xs:float" name="c2" use="optional"/>
+                                              <xs:attribute type="xs:float" name="c3" use="optional"/>
+                                              <xs:attribute type="xs:float" name="c4" use="optional"/>
+                                              <xs:attribute type="xs:string" name="val" use="optional"/>
+                                            </xs:extension>
+                                          </xs:simpleContent>
+                                        </xs:complexType>
+                                      </xs:element>
+                                    </xs:sequence>
+                                    <xs:attribute type="xs:byte" name="id" use="optional"/>
+                                    <xs:attribute type="xs:byte" name="def" use="optional"/>
+                                  </xs:complexType>
+                                </xs:element>
+                                <xs:element name="tagline" minOccurs="0">
+                                  <xs:complexType>
+                                    <xs:sequence>
+                                      <xs:element name="key" maxOccurs="unbounded" minOccurs="0">
+                                        <xs:complexType mixed="true">
+                                          <xs:sequence>
+                                            <xs:element name="tag" maxOccurs="unbounded" minOccurs="0">
+                                              <xs:complexType>
+                                                <xs:simpleContent>
+                                                  <xs:extension base="xs:string">
+                                                    <xs:attribute type="xs:byte" name="id"/>
+                                                    <xs:attribute type="xs:byte" name="t"/>
+                                                  </xs:extension>
+                                                </xs:simpleContent>
+                                              </xs:complexType>
+                                            </xs:element>
+                                          </xs:sequence>
+                                          <xs:attribute type="xs:byte" name="id" use="optional"/>
+                                          <xs:attribute type="xs:byte" name="time" use="optional"/>
+                                        </xs:complexType>
+                                      </xs:element>
+                                    </xs:sequence>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                        <xs:attribute type="xs:byte" name="id" use="optional"/>
+                        <xs:attribute type="xs:string" name="name" use="optional"/>
+                        <xs:attribute type="xs:byte" name="obj" use="optional"/>
+                        <xs:attribute type="xs:string" name="object_type" use="optional"/>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="soundline" maxOccurs="unbounded" minOccurs="0">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="key" maxOccurs="unbounded" minOccurs="0">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="object">
+                                  <xs:complexType>
+                                    <xs:simpleContent>
+                                      <xs:extension base="xs:string">
+                                        <xs:attribute type="xs:byte" name="folder" use="optional"/>
+                                        <xs:attribute type="xs:byte" name="file" use="optional"/>
+                                        <xs:attribute type="xs:float" name="panning" use="optional"/>
+                                        <xs:attribute type="xs:float" name="volume" use="optional"/>
+                                      </xs:extension>
+                                    </xs:simpleContent>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                              <xs:attribute type="xs:byte" name="id" use="optional"/>
+                              <xs:attribute type="xs:short" name="time" use="optional"/>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                        <xs:attribute type="xs:byte" name="id" use="optional"/>
+                        <xs:attribute type="xs:string" name="name" use="optional"/>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="eventline" maxOccurs="unbounded" minOccurs="0">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="key" maxOccurs="unbounded" minOccurs="0">
+                            <xs:complexType>
+                              <xs:simpleContent>
+                                <xs:extension base="xs:string">
+                                  <xs:attribute type="xs:byte" name="id" use="optional"/>
+                                  <xs:attribute type="xs:short" name="time" use="optional"/>
+                                </xs:extension>
+                              </xs:simpleContent>
+                            </xs:complexType>
+                          </xs:element>
+                          <xs:element name="meta" minOccurs="0">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="varline" maxOccurs="unbounded" minOccurs="0">
+                                  <xs:complexType>
+                                    <xs:sequence>
+                                      <xs:element name="key" maxOccurs="unbounded" minOccurs="0">
+                                        <xs:complexType>
+                                          <xs:simpleContent>
+                                            <xs:extension base="xs:string">
+                                              <xs:attribute type="xs:byte" name="id" use="optional"/>
+                                              <xs:attribute type="xs:short" name="time" use="optional"/>
+                                              <xs:attribute type="xs:string" name="curve_type" use="optional"/>
+                                              <xs:attribute type="xs:float" name="c1" use="optional"/>
+                                              <xs:attribute type="xs:float" name="c2" use="optional"/>
+                                              <xs:attribute type="xs:float" name="c3" use="optional"/>
+                                              <xs:attribute type="xs:float" name="c4" use="optional"/>
+                                              <xs:attribute type="xs:string" name="val" use="optional"/>
+                                            </xs:extension>
+                                          </xs:simpleContent>
+                                        </xs:complexType>
+                                      </xs:element>
+                                    </xs:sequence>
+                                    <xs:attribute type="xs:byte" name="id" use="optional"/>
+                                    <xs:attribute type="xs:byte" name="def" use="optional"/>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                        <xs:attribute type="xs:byte" name="id" use="optional"/>
+                        <xs:attribute type="xs:string" name="name" use="optional"/>
+                        <xs:attribute type="xs:byte" name="obj" use="optional"/>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="meta" minOccurs="0">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="varline" maxOccurs="unbounded" minOccurs="0">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="key" maxOccurs="unbounded" minOccurs="0">
+                                  <xs:complexType>
+                                    <xs:simpleContent>
+                                      <xs:extension base="xs:string">
+                                        <xs:attribute type="xs:byte" name="id" use="optional"/>
+                                        <xs:attribute type="xs:short" name="time" use="optional"/>
+                                        <xs:attribute type="xs:string" name="curve_type" use="optional"/>
+                                        <xs:attribute type="xs:float" name="c1" use="optional"/>
+                                        <xs:attribute type="xs:float" name="c2" use="optional"/>
+                                        <xs:attribute type="xs:float" name="c3" use="optional"/>
+                                        <xs:attribute type="xs:float" name="c4" use="optional"/>
+                                        <xs:attribute type="xs:string" name="val" use="optional"/>
+                                      </xs:extension>
+                                    </xs:simpleContent>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                              <xs:attribute type="xs:byte" name="id" use="optional"/>
+                              <xs:attribute type="xs:byte" name="def" use="optional"/>
+                            </xs:complexType>
+                          </xs:element>
+                          <xs:element name="tagline">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="key" maxOccurs="unbounded" minOccurs="0">
+                                  <xs:complexType mixed="true">
+                                    <xs:sequence>
+                                      <xs:element name="tag" maxOccurs="unbounded" minOccurs="0">
+                                        <xs:complexType>
+                                          <xs:simpleContent>
+                                            <xs:extension base="xs:string">
+                                              <xs:attribute type="xs:byte" name="id" use="optional"/>
+                                              <xs:attribute type="xs:byte" name="t" use="optional"/>
+                                            </xs:extension>
+                                          </xs:simpleContent>
+                                        </xs:complexType>
+                                      </xs:element>
+                                    </xs:sequence>
+                                    <xs:attribute type="xs:byte" name="id" use="optional"/>
+                                    <xs:attribute type="xs:short" name="time" use="optional"/>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attribute type="xs:byte" name="id" use="optional"/>
+                  <xs:attribute type="xs:string" name="name" use="optional"/>
+                  <xs:attribute type="xs:short" name="length" use="optional"/>
+                  <xs:attribute type="xs:byte" name="interval" use="optional"/>
+                  <xs:attribute type="xs:string" name="looping" use="optional"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute type="xs:byte" name="id" use="optional"/>
+            <xs:attribute type="xs:string" name="name" use="optional"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute type="xs:float" name="scml_version"/>
+      <xs:attribute type="xs:string" name="generator"/>
+      <xs:attribute type="xs:string" name="generator_version"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
