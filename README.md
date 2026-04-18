@@ -433,3 +433,12 @@ I, [TerminalJack](https://github.com/TerminalJack), would like to thank the orig
 The sample rate is set to 1000 due to the fact that that is Spriter's effective sample rate.  In Spriter, there is nothing stopping the creator from putting two keyframes just 1 millisecond apart.  Experience has shown that when the sample rate is too low that Unity can and will drop keys when they are too close to each other.
 
 Using the same sample rate as Spriter also allows Unity to be frame-for-frame identical to Spriter.  You will find the keys at the exact same frame time in Unity as you do in Spriter.
+
+## Development Resources
+
+If you are developing, maintaining, or troubleshooting Stui, then you may find these resouces useful.
+
+* BrashMonkey's Spriter [User Manual](https://www.brashmonkey.com/spriter_manual/index.htm)
+* BrashMonkey's Scml [Format Specification](https://www.brashmonkey.com/ScmlDocs/ScmlReference.html)
+* Online Scml (XML) Schema [Diagram Viewer](https://terminaljack.github.io/stui/ScmlSchemaViewer/scml_schema_viewer.html)  (Created from [this](https://github.com/TerminalJack/stui/blob/master/docs/scml-schema-definition.xsd) file.)
+* Free and paid Spriter project files can be found [here](https://opengameart.org/art-search?keys=spriter), [here](https://craftpix.net/?s=spriter), and [here](https://www.gamedeveloperstudio.com/).
