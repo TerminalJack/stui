@@ -174,7 +174,7 @@ namespace Spriter2UnityDX.Prefabs
                 animator.runtimeAnimatorController = controller;
             }
 
-            var transforms = new Dictionary<string, Transform>(); //All of the bones and sprites, identified by TimeLine.name, because those are truly unique
+            var transforms = new Dictionary<string, Transform>(); //All of the bones and sprites, identified by Timeline.name, because those are truly unique
             transforms["rootTransform"] = instance.transform; //The root GameObject needs to be part of this hierarchy as well
 
             var defaultBones = new Dictionary<string, SpatialInfo>();  // These are basically the object states on the first frame of the first animation
@@ -206,8 +206,8 @@ namespace Spriter2UnityDX.Prefabs
                 if (buildCtx.IsCanceled) { yield break; }
                 yield return $"{buildCtx.MessagePrefix}: processing";
 
-                var timeLines = new Dictionary<int, TimeLine>();
-                foreach (var timeLine in animation.timelines) //TimeLines hold all the critical data such as positioning and graphics used
+                var timeLines = new Dictionary<int, Timeline>();
+                foreach (var timeLine in animation.timelines) // Timelines hold all the critical data such as positioning and graphics used
                 {
                     timeLines[timeLine.id] = timeLine;
                 }
@@ -275,7 +275,7 @@ namespace Spriter2UnityDX.Prefabs
             buildCtx.ImportedPrefabs.Add(prefabPath);
         }
 
-        private void BuildSpriterVariableTransforms(Transform metadataTransform, List<SpriterVarDef> variableDefs)
+        private void BuildSpriterVariableTransforms(Transform metadataTransform, List<VarDef> variableDefs)
         {
             // Build the variable transforms under the given metadata transform.
             //
@@ -322,7 +322,7 @@ namespace Spriter2UnityDX.Prefabs
                 // Create the appropriate variable component...
                 switch (varDef.type)
                 {
-                    case SpriterVarType.Float:
+                    case VarType.Float:
                         var floatVarComponent = varTransform.gameObject.AddComponent<SpriterFloat>();
                         floatVarComponent.variableName = varDef.name;
                         if (!float.TryParse(varDef.defaultValue, out floatVarComponent.defaultValue))
@@ -333,7 +333,7 @@ namespace Spriter2UnityDX.Prefabs
                         floatVarComponent.value = floatVarComponent.defaultValue;
                         break;
 
-                    case SpriterVarType.Int:
+                    case VarType.Int:
                         var intVarComponent = varTransform.gameObject.AddComponent<SpriterInt>();
                         intVarComponent.variableName = varDef.name;
                         if (!int.TryParse(varDef.defaultValue, out intVarComponent.defaultValue))
@@ -344,7 +344,7 @@ namespace Spriter2UnityDX.Prefabs
                         intVarComponent.valueAsFloat = (float)intVarComponent.defaultValue;
                         break;
 
-                    case SpriterVarType.String:
+                    case VarType.String:
                         var stringVarComponent = varTransform.gameObject.AddComponent<SpriterString>();
                         stringVarComponent.variableName = varDef.name;
                         stringVarComponent.possibleValues = varDef.possibleStringValues.ToList();
@@ -716,7 +716,7 @@ namespace Spriter2UnityDX.Prefabs
         }
 
         private void ProcessBones(Dictionary<int, string> parents, Dictionary<string, Transform> transforms,
-            Dictionary<int, TimeLine> timeLines, MainLineKey key, Dictionary<string, SpatialInfo> defaultBones,
+            Dictionary<int, Timeline> timeLines, MainlineKey key, Dictionary<string, SpatialInfo> defaultBones,
             SpriterEntityInfo entityInfo)
         {
             var boneRefs = new Queue<Ref>(key.boneRefs);
@@ -778,7 +778,7 @@ namespace Spriter2UnityDX.Prefabs
         }
 
         private void ProcessSprites(Dictionary<int, string> parents, Dictionary<string, Transform> transforms,
-            Dictionary<int, TimeLine> timeLines, MainLineKey key, Dictionary<string, SpatialInfo> defaultBones,
+            Dictionary<int, Timeline> timeLines, MainlineKey key, Dictionary<string, SpatialInfo> defaultBones,
             Dictionary<string, SpriteInfo> defaultSprites, SpriterEntityInfo entityInfo,
             IDictionary<int, IDictionary<int, Sprite>> folders, bool firstAnim)
         {
@@ -895,7 +895,7 @@ namespace Spriter2UnityDX.Prefabs
         }
 
         private void ProcessActionPoints(Dictionary<int, string> parents, Dictionary<string, Transform> transforms,
-            Dictionary<int, TimeLine> timeLines, MainLineKey key, Dictionary<string, SpatialInfo> defaultActionPoints,
+            Dictionary<int, Timeline> timeLines, MainlineKey key, Dictionary<string, SpatialInfo> defaultActionPoints,
             SpriterEntityInfo entityInfo)
         {
             foreach (var oref in key.objectRefs)

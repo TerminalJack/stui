@@ -27,13 +27,13 @@ namespace Spriter2UnityDX
                     yield return $"    variable name: {variableDef.name}, type: {variableDef.type}, " +
                         "default value: {variableDef.defaultValue}";
 
-                    if (variableDef.type == SpriterVarType.String)
+                    if (variableDef.type == VarType.String)
                     {   // Figure out what all of the possible string values this string variable can have.
                         var possibleStringValues =
                             entity.animations?
-                                .SelectMany(a => a.metadata?.varlines ?? Enumerable.Empty<SpriterVarline>())
+                                .SelectMany(a => a.metadata?.varlines ?? Enumerable.Empty<Varline>())
                                 .Where(v => v.varDefId == variableDef.id)
-                                .SelectMany(v => v.keys ?? Enumerable.Empty<SpriterVarlineKey>())
+                                .SelectMany(v => v.keys ?? Enumerable.Empty<VarlineKey>())
                                 .Select(k => k.value)
                                 .Where(v => v != null)
                                 .Distinct()

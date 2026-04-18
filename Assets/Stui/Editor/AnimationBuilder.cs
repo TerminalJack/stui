@@ -85,7 +85,7 @@ namespace Spriter2UnityDX.Animations
             return null;
         }
 
-        public IEnumerator Build(Animation animation, IDictionary<int, TimeLine> timeLines, IBuildTaskContext buildCtx)
+        public IEnumerator Build(Animation animation, IDictionary<int, Timeline> timeLines, IBuildTaskContext buildCtx)
         {
             var clip = new AnimationClip();
             clip.name = animation.name;
@@ -99,7 +99,7 @@ namespace Spriter2UnityDX.Animations
 
             foreach (var key in animation.mainlineKeys)
             {
-                var parentTimelines = new Dictionary<int, List<TimeLineKey>>();
+                var parentTimelines = new Dictionary<int, List<TimelineKey>>();
                 var brefs = new Queue<Ref>(key.boneRefs);
 
                 while (brefs.Count > 0)
@@ -109,7 +109,7 @@ namespace Spriter2UnityDX.Animations
                     if (bref.parent < 0 || parentTimelines.ContainsKey(bref.parent))
                     {
                         var timeLine = timeLines[bref.timeline];
-                        parentTimelines[bref.id] = new List<TimeLineKey>(timeLine.keys);
+                        parentTimelines[bref.id] = new List<TimelineKey>(timeLine.keys);
                         Transform bone;
 
                         if (pendingTransforms.TryGetValue(timeLine.name, out bone))
@@ -351,13 +351,13 @@ namespace Spriter2UnityDX.Animations
             }
         }
 
-        private void SetCurves(Transform child, SpatialInfo defaultInfo, TimeLine timeLine, AnimationClip clip, Animation animation)
+        private void SetCurves(Transform child, SpatialInfo defaultInfo, Timeline timeLine, AnimationClip clip, Animation animation)
         {
             var defZ = 0f;
             SetCurves(child, defaultInfo, timeLine, clip, animation, ref defZ);
         }
 
-        private void SetCurves(Transform child, SpatialInfo defaultInfo, TimeLine timeLine,
+        private void SetCurves(Transform child, SpatialInfo defaultInfo, Timeline timeLine,
             AnimationClip clip, Animation animation, ref float defaultZ)
         {
             var childPath = GetPathToChild(child);
@@ -500,7 +500,7 @@ namespace Spriter2UnityDX.Animations
             clip.EnsureQuaternionContinuity();
         }
 
-        private bool ConvertTimelineAngles(TimeLine timeLine, Animation animation)
+        private bool ConvertTimelineAngles(Timeline timeLine, Animation animation)
         {
             for (int i = 0; i < timeLine.keys.Count; ++i)
             {   // Convert angles so that spin is taken into account...
@@ -586,7 +586,7 @@ namespace Spriter2UnityDX.Animations
         }
 
         // This is for curves that are tracked slightly differently from regular curves: sprite renderer enabled curve and Z-index curve
-        private void SetAdditionalCurves(Transform child, List<MainLineKey> keys, TimeLine timeLine, AnimationClip clip, float defaultZ)
+        private void SetAdditionalCurves(Transform child, List<MainlineKey> keys, Timeline timeLine, AnimationClip clip, float defaultZ)
         {
             var positionChanged = false;
             var kfsZ = new List<Keyframe>();
@@ -679,7 +679,7 @@ namespace Spriter2UnityDX.Animations
             }
         }
 
-        private void SetKeys<T>(AnimationCurve curve, TimeLine timeLine, Func<T, float> infoValue,
+        private void SetKeys<T>(AnimationCurve curve, Timeline timeLine, Func<T, float> infoValue,
             Animation animation, bool mainlineBlending = true, CurveType overrideCurveType = CurveType.linear) where T : SpatialInfo
         {
             // Mainline keys that have a curve type other than linear will 'blend' (for lack of a better term) with the
@@ -699,13 +699,13 @@ namespace Spriter2UnityDX.Animations
             }
         }
 
-        private void DoSetKeys<T>(AnimationCurve curve, TimeLine timeLine, Func<T, float> infoValue,
+        private void DoSetKeys<T>(AnimationCurve curve, Timeline timeLine, Func<T, float> infoValue,
             Animation animation, CurveType overrideCurveType = CurveType.linear) where T : SpatialInfo
         {
             List<AnimationCurve> allCurves = new List<AnimationCurve>();
 
             for (int i = 0; i < timeLine.keys.Count; ++i)
-            {   // Create a keyframe for every key on its personal TimeLine...
+            {   // Create a keyframe for every key on its personal Timeline...
                 var key = timeLine.keys[i];
 
                 if (key.time_s >= animation.length)
@@ -733,7 +733,7 @@ namespace Spriter2UnityDX.Animations
             CurveBuilder.ConcatenateCurvesInto(curve, allCurves.ToArray());
         }
 
-        private float GetFinalFrameInferredKeyValue<T>(TimeLine timeLine, Func<T, float> infoValue,
+        private float GetFinalFrameInferredKeyValue<T>(Timeline timeLine, Func<T, float> infoValue,
             Animation animation) where T : SpatialInfo
         {
             // This will return the appropriate value for the the last frame of an animation based on whether 1) there
@@ -761,7 +761,7 @@ namespace Spriter2UnityDX.Animations
             return endValue;
         }
 
-        private void SetKeysWithMainlineBlending<T>(AnimationCurve curve, TimeLine timeLine, Func<T, float> infoValue,
+        private void SetKeysWithMainlineBlending<T>(AnimationCurve curve, Timeline timeLine, Func<T, float> infoValue,
             Animation animation) where T : SpatialInfo
         {
             AnimationCurve timelineCurve = new AnimationCurve();
@@ -857,12 +857,12 @@ namespace Spriter2UnityDX.Animations
             CurveBuilder.ConcatenateCurvesInto(curve, allCurves.ToArray());
         }
 
-        private void SetVirtualParentKeys(AnimationCurve curve, TimeLine timeLine, Func<SpatialInfo, string> infoValue, Animation animation, string childName)
+        private void SetVirtualParentKeys(AnimationCurve curve, Timeline timeLine, Func<SpatialInfo, string> infoValue, Animation animation, string childName)
         {
             List<AnimationCurve> allCurves = new List<AnimationCurve>();
 
             for (int i = 0; i < timeLine.keys.Count; ++i)
-            {   // Create a keyframe for every key on its personal TimeLine...
+            {   // Create a keyframe for every key on its personal Timeline...
                 var key = timeLine.keys[i];
 
                 if (key.time_s >= animation.length)
@@ -963,12 +963,12 @@ namespace Spriter2UnityDX.Animations
             return t;
         }
 
-        private void SetKeys(AnimationCurve curve, TimeLine timeLine, ref Sprite[] sprites, Animation animation)
+        private void SetKeys(AnimationCurve curve, Timeline timeLine, ref Sprite[] sprites, Animation animation)
         {
             List<AnimationCurve> allCurves = new List<AnimationCurve>();
 
             for (int i = 0; i < timeLine.keys.Count; ++i)
-            {   // Create a keyframe for every key on its personal TimeLine...
+            {   // Create a keyframe for every key on its personal Timeline...
                 var key = timeLine.keys[i];
                 var info = (SpriteInfo)key.info;
 
@@ -996,7 +996,7 @@ namespace Spriter2UnityDX.Animations
             CurveBuilder.ConcatenateCurvesInto(curve, allCurves.ToArray());
         }
 
-        void SetSpriteSwapKeys(Transform child, TimeLine timeLine, AnimationClip clip, Animation animation)
+        void SetSpriteSwapKeys(Transform child, Timeline timeLine, AnimationClip clip, Animation animation)
         {
             // Create ObjectReferenceCurve for swapping sprites. This curve will save data in object form instead of floats like regular AnimationCurve.
             var keyframes = new List<ObjectReferenceKeyframe>();
@@ -1095,7 +1095,7 @@ namespace Spriter2UnityDX.Animations
             SpriteSortOrder
         }
 
-        private IDictionary<ChangedValues, AnimationCurve> GetCurves(Animation animation, TimeLine timeLine,
+        private IDictionary<ChangedValues, AnimationCurve> GetCurves(Animation animation, Timeline timeLine,
             SpatialInfo defaultInfo, Transform child)
         {
             // This method checks every animatable property for changes and creates a curve

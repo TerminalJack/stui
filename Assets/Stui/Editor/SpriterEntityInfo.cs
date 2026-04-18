@@ -26,8 +26,8 @@ namespace Spriter2UnityDX.EntityInfo
 
             public List<string> parentBoneNames = new List<string>(); // Empty if there aren't any.
 
-            public Dictionary<int, SpriterVarDef> variableDefs = new Dictionary<int, SpriterVarDef>(); // Empty if there aren't any variables for this object.
-            public Dictionary<int, SpriterTagListItem> tagDefs = new Dictionary<int, SpriterTagListItem>(); // Empty if there aren't any tags for this object.
+            public Dictionary<int, VarDef> variableDefs = new Dictionary<int, VarDef>(); // Empty if there aren't any variables for this object.
+            public Dictionary<int, TagListItem> tagDefs = new Dictionary<int, TagListItem>(); // Empty if there aren't any tags for this object.
 
             public bool HasMetadata { get { return HasVariables || HasTags;  } }
             public bool HasVariables { get { return variableDefs.Count > 0;  } }
@@ -73,8 +73,8 @@ namespace Spriter2UnityDX.EntityInfo
         public List<SpriterSoundItem> soundItems = new List<SpriterSoundItem>();
 
         // The key for these is the id.
-        public Dictionary<int, SpriterVarDef> variableDefs = new Dictionary<int, SpriterVarDef>(); // Empty if there aren't any entity-scoped variables.
-        public Dictionary<int, SpriterTagListItem> tagDefs = new Dictionary<int, SpriterTagListItem>(); // Empty if there aren't any tags.
+        public Dictionary<int, VarDef> variableDefs = new Dictionary<int, VarDef>(); // Empty if there aren't any entity-scoped variables.
+        public Dictionary<int, TagListItem> tagDefs = new Dictionary<int, TagListItem>(); // Empty if there aren't any tags.
 
         public bool HasMetadata { get { return HasVariables || HasTags;  } }
         public bool HasVariables { get { return variableDefs.Count > 0;  } }
@@ -237,7 +237,7 @@ namespace Spriter2UnityDX.EntityInfo
                     mlk.time_s += delta;
                 }
 
-                IEnumerable<TimeLineKey> allTimelineKeys = anim.timelines.SelectMany(tl => tl.keys);
+                IEnumerable<TimelineKey> allTimelineKeys = anim.timelines.SelectMany(tl => tl.keys);
 
                 foreach (var tlk in allTimelineKeys)
                 {
@@ -517,13 +517,13 @@ namespace Spriter2UnityDX.EntityInfo
                 {
                     Log($"    variable name: {variableDef.name}, type: {variableDef.type}, default value: {variableDef.defaultValue}");
 
-                    if (variableDef.type == SpriterVarType.String)
+                    if (variableDef.type == VarType.String)
                     {   // Figure out what all of the possible string values this string variable can have.
                         var possibleStringValues =
                             entity.animations?
-                                .SelectMany(a => a.metadata?.varlines ?? Enumerable.Empty<SpriterVarline>())
+                                .SelectMany(a => a.metadata?.varlines ?? Enumerable.Empty<Varline>())
                                 .Where(v => v.varDefId == variableDef.id)
-                                .SelectMany(v => v.keys ?? Enumerable.Empty<SpriterVarlineKey>())
+                                .SelectMany(v => v.keys ?? Enumerable.Empty<VarlineKey>())
                                 .Select(k => k.value)
                                 .Where(v => v != null)
                                 .Distinct()
@@ -585,7 +585,7 @@ namespace Spriter2UnityDX.EntityInfo
                 {
                     Log($"            variable name: {variableDef.name}, type: {variableDef.type}, default value: {variableDef.defaultValue}");
 
-                    if (variableDef.type == SpriterVarType.String)
+                    if (variableDef.type == VarType.String)
                     {   // Figure out what all of the possible string values this string variable can have.
                         List<string> possibleStringValues;
 
@@ -594,9 +594,9 @@ namespace Spriter2UnityDX.EntityInfo
                             possibleStringValues = entity.animations?
                                 .SelectMany(a => a.eventlines)
                                 .Where(e => e.name == info.name)
-                                .SelectMany(e => e.metadata?.varlines ?? Enumerable.Empty<SpriterVarline>())
+                                .SelectMany(e => e.metadata?.varlines ?? Enumerable.Empty<Varline>())
                                 .Where(v => v.varDefId == variableDef.id)
-                                .SelectMany(v => v.keys ?? Enumerable.Empty<SpriterVarlineKey>())
+                                .SelectMany(v => v.keys ?? Enumerable.Empty<VarlineKey>())
                                 .Select(k => k.value)
                                 .Where(v => v != null)
                                 .Distinct()
@@ -607,11 +607,11 @@ namespace Spriter2UnityDX.EntityInfo
                         else
                         {
                             possibleStringValues = entity.animations?
-                                .SelectMany(a => a.timelines ?? Enumerable.Empty<TimeLine>())
+                                .SelectMany(a => a.timelines ?? Enumerable.Empty<Timeline>())
                                 .Where(t => t.name == info.name && t.objectType == info.type)
-                                .SelectMany(t => t.metadata?.varlines ?? Enumerable.Empty<SpriterVarline>())
+                                .SelectMany(t => t.metadata?.varlines ?? Enumerable.Empty<Varline>())
                                 .Where(v => v.varDefId == variableDef.id)
-                                .SelectMany(v => v.keys ?? Enumerable.Empty<SpriterVarlineKey>())
+                                .SelectMany(v => v.keys ?? Enumerable.Empty<VarlineKey>())
                                 .Select(k => k.value)
                                 .Where(v => v != null)
                                 .Distinct()
@@ -1090,7 +1090,7 @@ namespace Spriter2UnityDX.EntityInfo
         bool IsPivotChange(SpriteInfo a, SpriteInfo b)
             => a.pivot_x != b.pivot_x || a.pivot_y != b.pivot_y;
 
-        bool HandleKeyTimeAdjustment(Animation animation, TimeLineKey tlk)
+        bool HandleKeyTimeAdjustment(Animation animation, TimelineKey tlk)
         {
             var currTime_s = tlk.time_s;
 

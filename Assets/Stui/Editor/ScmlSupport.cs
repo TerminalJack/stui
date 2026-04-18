@@ -20,7 +20,7 @@ namespace Spriter2UnityDX.Importing
     {   // Master class that holds all the other data
         [XmlElement("folder")] public List<Folder> folders = new List<Folder>(); // <folder> tags
         [XmlElement("entity")] public List<Entity> entities = new List<Entity>(); // <entity> tags
-        [XmlArray("tag_list"), XmlArrayItem("i")] public List<SpriterTagListItem> tags = new List<SpriterTagListItem>();
+        [XmlArray("tag_list"), XmlArrayItem("i")] public List<TagListItem> tags = new List<TagListItem>();
     }
 
     public class Folder : ScmlElement
@@ -54,13 +54,13 @@ namespace Spriter2UnityDX.Importing
             set { _name = EntityNameSanitizer.Sanitize(value); }
         }
 
-        [XmlElement("obj_info")] public List<SpriterObjectInfo> objectInfos = new List<SpriterObjectInfo>();
+        [XmlElement("obj_info")] public List<ObjectInfo> objectInfos = new List<ObjectInfo>();
         [XmlElement("character_map")] public List<CharacterMap> characterMaps = new List<CharacterMap>(); // <character_map> tags
         [XmlElement("animation")] public List<Animation> animations = new List<Animation>(); // <animation> tags
-        [XmlArray("var_defs"), XmlArrayItem("i")] public List<SpriterVarDef> variableDefs = new List<SpriterVarDef>();
+        [XmlArray("var_defs"), XmlArrayItem("i")] public List<VarDef> variableDefs = new List<VarDef>();
     }
 
-    public class SpriterObjectInfo : ScmlElement
+    public class ObjectInfo : ScmlElement
     {
         [XmlAttribute] public string name { get; set; }
         [XmlAttribute("type")] public ObjectType objectType;
@@ -71,44 +71,44 @@ namespace Spriter2UnityDX.Importing
         [XmlAttribute("pivot_x")] public float pivot_x;
         [XmlAttribute("pivot_y")] public float pivot_y;
 
-        [XmlArray("var_defs"), XmlArrayItem("i")] public List<SpriterVarDef> variableDefs = new List<SpriterVarDef>();
+        [XmlArray("var_defs"), XmlArrayItem("i")] public List<VarDef> variableDefs = new List<VarDef>();
     }
 
     public class Eventline : ScmlElement
     {
         [XmlAttribute] public string name { get; set; }
-        [XmlAttribute] public int obj { get; set; } // ! Not sure what this is for.
+        // ? (Not used) [XmlAttribute] public int obj { get; set; }
 
-        [XmlElement("key")] public List<SpriterKey> keys = new List<SpriterKey>();
-        [XmlElement("meta")] public SpriterMeta metadata;
+        [XmlElement("key")] public List<SimpleKey> keys = new List<SimpleKey>();
+        [XmlElement("meta")] public Metadata metadata;
     }
 
-    public class SpriterMeta
+    public class Metadata
     {
-        [XmlElement("varline")] public List<SpriterVarline> varlines = new List<SpriterVarline>();
-        [XmlElement("tagline")] public SpriterTagline tagline;
+        [XmlElement("varline")] public List<Varline> varlines = new List<Varline>();
+        [XmlElement("tagline")] public Tagline tagline;
     }
 
-    public class SpriterVarDef : ScmlElement
+    public class VarDef : ScmlElement
     {
         [XmlAttribute] public string name { get; set; }
-        [XmlAttribute("type")] public SpriterVarType type;
+        [XmlAttribute("type")] public VarType type;
 
         [XmlAttribute("default")] public string defaultValue;
 
         [XmlIgnore] public List<string> possibleStringValues = new List<string>(); // if type is String then this will be populated.
     }
 
-    public class SpriterVarline : ScmlElement
+    public class Varline : ScmlElement
     {
-        [XmlAttribute] public string name { get; set; } // ! Used?
-        [XmlAttribute("def")] public int varDefId; // Id of entry in corresponding collection of SpriterVarDefs.
-        [XmlElement("key")] public List<SpriterVarlineKey> keys = new List<SpriterVarlineKey>();
+        [XmlAttribute] public string name { get; set; } // ? Used?
+        [XmlAttribute("def")] public int varDefId; // Id of entry in corresponding collection of VarDefs.
+        [XmlElement("key")] public List<VarlineKey> keys = new List<VarlineKey>();
     }
 
-    public class SpriterKey : ScmlElement
+    public class SimpleKey : ScmlElement
     {
-        public SpriterKey() { time = 0; }
+        public SimpleKey() { time = 0; }
 
         private float _time; // In seconds.
 
@@ -123,7 +123,10 @@ namespace Spriter2UnityDX.Importing
 
         // Use the following when getting (and especially setting) the time so that you know what units you're working in.
         [XmlIgnore] public float time_s { get { return _time; } set { _time = value; }}
+    }
 
+    public class SpriterKey : SimpleKey
+    {
         [XmlAttribute] public CurveType curve_type { get; set; } // enum : INSTANT,LINEAR,QUADRATIC,CUBIC //Dengar.NOTE (again, no caps)
 
         [XmlAttribute] public float c1 { get; set; }
@@ -132,32 +135,32 @@ namespace Spriter2UnityDX.Importing
         [XmlAttribute] public float c4 { get; set; }
     }
 
-    public class SpriterVarlineKey : SpriterKey
+    public class VarlineKey : SpriterKey
     {
         [XmlAttribute("val")] public string value;
     }
 
-    public class SpriterTagListItem : ScmlElement
+    public class TagListItem : ScmlElement
     {
         [XmlAttribute] public string name { get; set; }
     }
 
-    public class SpriterTagline
+    public class Tagline
     {
-        [XmlElement("key")] public List<SpriterTaglineKey> keys = new List<SpriterTaglineKey>();
+        [XmlElement("key")] public List<TaglineKey> keys = new List<TaglineKey>();
     }
 
-    public class SpriterTaglineKey : SpriterKey
+    public class TaglineKey : SimpleKey
     {
-        [XmlElement("tag")] public List<SpriterTagInfo> tags = new List<SpriterTagInfo>();
+        [XmlElement("tag")] public List<TagInfo> tags = new List<TagInfo>();
     }
 
-    public class SpriterTagInfo : ScmlElement
+    public class TagInfo : ScmlElement
     {
         [XmlAttribute("t")] public int tagId;
     }
 
-    public enum SpriterVarType
+    public enum VarType
     {
         [XmlEnum("string")]
         String,
@@ -175,7 +178,7 @@ namespace Spriter2UnityDX.Importing
         [XmlElement("key")] public List<SoundlineKey> keys = new List<SoundlineKey>();
     }
 
-    public class SoundlineKey : SpriterKey
+    public class SoundlineKey : SimpleKey
     {
         [XmlElement("object")] public SpriterSound soundObject;
     }
@@ -184,7 +187,6 @@ namespace Spriter2UnityDX.Importing
     {
         [XmlAttribute("folder")] public int folder;
         [XmlAttribute("file")] public int file;
-        [XmlAttribute("trigger")] public bool trigger;
         [XmlAttribute("panning")] public float panning;
         [XmlAttribute("volume")] public float volume;
 
@@ -192,7 +194,6 @@ namespace Spriter2UnityDX.Importing
         {
             folder = -1;
             file = -1;
-            trigger = true;
             panning = 0f;
             volume = 1.0f;
         }
@@ -241,24 +242,24 @@ namespace Spriter2UnityDX.Importing
 
         [XmlAttribute] public bool looping { get; set; } // enum : NO_LOOPING,LOOPING //Dengar.NOTE: the actual values are true and false, so it's a bool
         [XmlArray("mainline"), XmlArrayItem("key")]
-        public List<MainLineKey> mainlineKeys = new List<MainLineKey>(); // <key> tags within a single <mainline> tag
-        [XmlElement("timeline")] public List<TimeLine> timelines = new List<TimeLine>(); // <timeline> tags
+        public List<MainlineKey> mainlineKeys = new List<MainlineKey>(); // <key> tags within a single <mainline> tag
+        [XmlElement("timeline")] public List<Timeline> timelines = new List<Timeline>(); // <timeline> tags
         [XmlElement("eventline")] public List<Eventline> eventlines = new List<Eventline>();
         [XmlElement("soundline")] public List<Soundline> soundlines = new List<Soundline>();
-        [XmlElement("meta")] public SpriterMeta metadata;
+        [XmlElement("meta")] public Metadata metadata;
     }
 
-    public class MainLineKey : SpriterKey
+    public class MainlineKey : SpriterKey
     {
         public override string ToString()
         {
-            return $"{nameof(MainLineKey)}, id:{id}, time:{time}, curve_type:{curve_type}, " +
+            return $"{nameof(MainlineKey)}, id:{id}, time:{time}, curve_type:{curve_type}, " +
                 $"c1:{c1} c2:{c2}, c3:{c3}, c4:{c4}";
         }
 
-        public MainLineKey Clone()
+        public MainlineKey Clone()
         {
-            var clone = (MainLineKey)MemberwiseClone();
+            var clone = (MainlineKey)MemberwiseClone();
 
             clone.boneRefs = new List<Ref>(boneRefs);
             clone.objectRefs = new List<Ref>(objectRefs);
@@ -298,12 +299,12 @@ namespace Spriter2UnityDX.Importing
         [XmlEnum("event")] spriterEvent // Did older Spriter files have this?  Seems to be used only for <obj_info> tags.
     }
 
-    public class TimeLine : ScmlElement
+    public class Timeline : ScmlElement
     {
         [XmlAttribute] public string name { get; set; }
         [XmlAttribute("object_type")] public ObjectType objectType { get; set; } // enum : SPRITE,BONE,BOX,POINT,SOUND,ENTITY,VARIABLE //Dengar.NOTE (except not in all caps)
-        [XmlElement("key")] public List<TimeLineKey> keys = new List<TimeLineKey>(); // <key> tags within <timeline> tags
-        [XmlElement("meta")] public SpriterMeta metadata;
+        [XmlElement("key")] public List<TimelineKey> keys = new List<TimelineKey>(); // <key> tags within <timeline> tags
+        [XmlElement("meta")] public Metadata metadata;
     }
 
     public enum CurveType
@@ -317,19 +318,19 @@ namespace Spriter2UnityDX.Importing
         bezier
     }
 
-    public class TimeLineKey : SpriterKey
+    public class TimelineKey : SpriterKey
     {
-        public TimeLineKey() { spin = 1; }
+        public TimelineKey() { spin = 1; }
 
         public override string ToString()
         {
-            return $"{nameof(TimeLineKey)}, id:{id}, time_s:{time_s}, spin:{spin}, curve_type:{curve_type}, " +
+            return $"{nameof(TimelineKey)}, id:{id}, time_s:{time_s}, spin:{spin}, curve_type:{curve_type}, " +
                 $"c1:{c1} c2:{c2}, c3:{c3}, c4:{c4}, info:{info}";
         }
 
-        public TimeLineKey Clone()
+        public TimelineKey Clone()
         {
-            var clone = (TimeLineKey)MemberwiseClone();
+            var clone = (TimelineKey)MemberwiseClone();
 
             clone.info = info.Clone();
             clone.timeZeroAuxKey = timeZeroAuxKey?.Clone();
@@ -342,7 +343,7 @@ namespace Spriter2UnityDX.Importing
         [XmlElement("bone", typeof(SpatialInfo)), XmlElement("object", typeof(SpriteInfo))]
         public SpatialInfo info { get; set; }
 
-        [XmlIgnore] public TimeLineKey timeZeroAuxKey;
+        [XmlIgnore] public TimelineKey timeZeroAuxKey;
     }
 
     public class SpatialInfo
@@ -443,7 +444,7 @@ namespace Spriter2UnityDX.Importing
 
         private float trueScaleY;
 
-        [XmlAttribute] public float a { get; set; } //Alpha
+        [XmlAttribute] public float a { get; set; } // Alpha
 
         public float z_index { get; set;  } // This is the value from the mainlineKey.objectInfo or mainlineKey.boneInfo.
         public int SortingOrder { get { return ZIndexToSortingOrder(z_index); } }
@@ -528,8 +529,8 @@ namespace Spriter2UnityDX.Importing
         [XmlAttribute] public float pivot_x { get; set; } // Pivot read from SCML file or file defaults if not read.
         [XmlAttribute] public float pivot_y { get; set; }
 
-        [XmlAttribute] public float default_pivot_x { get; set; } // Imported file's pivots.
-        [XmlAttribute] public float default_pivot_y { get; set; }
+        public float default_pivot_x { get; set; } // Imported file's pivots.
+        public float default_pivot_y { get; set; }
 
         public void InitPivots(File spriteFile)
         {
