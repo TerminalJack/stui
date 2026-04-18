@@ -62,7 +62,7 @@ Drop one of these prefabs into the `Scene` view.  Open Unity's `Animation` windo
 
 A quick and easy way to play through all of a prefab's animation clips is to use the `Clip Runner` component.  You'll find this component in the `Extras/` folder.  Put a `Clip Runner` component on the root of the game object.  (Where the `Animator` component is located.)
 
-![Clip Runner Component](Docs/Images/ClipRunner.png)
+![Clip Runner Component](docs/Images/ClipRunner.png)
 
 Leave the properties as-is and run the scene.  (Leave the `Cross Fade` property unchecked, in particular.)  This will run each of the animation clips in the game view.
 
@@ -128,7 +128,7 @@ The `Spriter Import Options` window will appear whenever you either, a) drop a S
 
 You'll be given the option to set the options shown in the figure below.
 
-![Import Options Window](Docs/Images/SpriterImportOptionsWindow.png)
+![Import Options Window](docs/Images/SpriterImportOptionsWindow.png)
 
 Once you have selected the appropriate options, click the `Import` button to proceed with the import.  Click `Cancel` to dismiss the window and cancel the import.
 
@@ -146,7 +146,7 @@ The following components are used at runtime (and in some cases, in-editor) to s
 
 ### `Character Map Controller`
 
-![Character Map Controller Image](Docs/Images/CharacterMapController_v5.png)
+![Character Map Controller Image](docs/Images/CharacterMapController_v5.png)
 
 >Whether `Character Map Controllers` are created, or not, is determined at the time of import.  Uncheck the `Direct Sprite Swapping` checkbox *and* check the `Create Character Maps` checkbox to create a `Character Map Controller` component for each of the Spriter entities that have one or more character maps defined.
 
@@ -214,7 +214,7 @@ Applies all of the maps in the `activeMapNames` list.  The mapping defined in `b
 
 ### `Dynamic Pivot 2D`
 
-![Dynamic Pivot 2D Image](Docs/Images/TransformWithDynamicPivot.png)
+![Dynamic Pivot 2D Image](docs/Images/TransformWithDynamicPivot.png)
 
 A Dynamic Pivot 2D component will be used in the case where--if in any of an entity's animations--a sprite uses a pivot point that is different than its default.  The entity's animation clips will then have animation curves that set the pivot's `X` and `Y` properties as appropriate.
 
@@ -222,7 +222,7 @@ When a Dynamic Pivot 2D component is used the sprite renderer will be placed on 
 
 ### `Sorting Order Updater`
 
-![Typical Sprite Renderer Example Image](Docs/Images/TypicalSpriteRendererExample.png)
+![Typical Sprite Renderer Example Image](docs/Images/TypicalSpriteRendererExample.png)
 
 This component is responsible for updating its corresponding sprite renderer's `Order in Layer` property, where larger values indicate sprites that are closer to the camera.  The `Sorting Order Updater` component will either be on the same game object as the sprite renderer or, if the sprite requires a `Dynamic Pivot 2D` component, it will be on the same game object as the pivot component.  (See the image under the description of the `Dynamic Pivot 2D` component for an example of this.)
 
@@ -242,7 +242,7 @@ The component's `Is Visible` property will be set by animation curves when a spr
 
 ### `Texture Controller`
 
-![Texture Controller Image](Docs/Images/SpriteRendererWithTextureController.png)
+![Texture Controller Image](docs/Images/SpriteRendererWithTextureController.png)
 
 >Whether `Texture Controllers` are created, or not, is determined at the time of import.  Uncheck the `Direct Sprite Swapping` checkbox to create texture controllers.
 
@@ -258,7 +258,7 @@ Sprites that have only a single texture across all animations will not have a `T
 
 ### `Virtual Parent`
 
-![Virtual Parent Image](Docs/Images/TransformWithVirtualParent.png)
+![Virtual Parent Image](docs/Images/TransformWithVirtualParent.png)
 
 If you're familiar with Parent Constraints or Child-of Constraints then you will already understand the purpose of the `Virtual Parent` component.
 
@@ -391,7 +391,7 @@ You can launch the utility in three ways:
 
 The first two options will automatically pre-fill the `Input File` field in the utility window.
 
-![Resize Spriter Project Window](Docs/Images/Resize%20Spriter%20Project%20Window.png)
+![Resize Spriter Project Window](docs/Images/Resize%20Spriter%20Project%20Window.png)
 
 If the `Input File` field isn't already filled-out, enter the path to the `.scml` file that is being resized.  You can manually enter the file path or use the `…` button to select it using your OS file browser.
 
