@@ -102,16 +102,16 @@ The importer currently supports the following Spriter features:
 * **Sort order or z-index.**  Sprites can change their sort order frame-by-frame.  This is fully supported via the `Sprite Renderer` `Order in layer` property.
 * **Character maps.**  Character maps are a powerful feature that allow you to easily customize the appearance of imported Spriter entities.  This is basically a re-skinning feature.
 * **Action points.**  Spriter action points will be imported as transforms.  They can be moved, rotated, and reparented.  They are useful for specifying "spawn points" (the location and rotation) of game objects, such as projectiles.
+* **Sounds effects.**  Spriter allows for sounds effects (`.wav` files) to play at specific points during an animation.  The importer will create animation events for each of the sound effects and there is a component provided (`Sound Controller`) that will handle the details of playing the sounds.  Note that sound effects will play only when your game is in play mode.  The sound effects will not play in-editor due to limitations in Unity.  Stay tuned for more information regarding this feature.
+* **Event triggers.**  Events are user-defined actions (that is, your code) that run at a specific point in time during an animation.  These are imported as Unity animation events.  You can subscribe to these events either at design time via the inspector and/or you can subscribe to them at runtime via an API.  Stay tuned for more information regarding this feature.
 
 ## Unsupported Spriter Features.
 
 The following Spriter features are not supported at this time:
 
-* Variables
-* Tags
-* Triggers
+* Variables (Coming soon.)
+* Tags (Coming soon.)
 * Collision rectangles
-* Sounds
 * SCON files (an alternative to SCML files)
 * Sub-entities
 * Texture Packer atlases
@@ -436,9 +436,24 @@ Using the same sample rate as Spriter also allows Unity to be frame-for-frame id
 
 ## Development Resources
 
-If you are developing, maintaining, or troubleshooting Stui, then you may find these resouces useful.
+If you are developing, maintaining, or troubleshooting Stui, then you may find these resources useful.
 
 * BrashMonkey's Spriter [User Manual](https://www.brashmonkey.com/spriter_manual/index.htm)
 * BrashMonkey's Scml [Format Specification](https://www.brashmonkey.com/ScmlDocs/ScmlReference.html)
-* Online Scml (XML) Schema [Diagram Viewer](https://terminaljack.github.io/stui/ScmlSchemaViewer/scml_schema_viewer.html)  (Created from [this](https://github.com/TerminalJack/stui/blob/master/docs/scml-schema-definition.xsd) file.)
+* Online Scml (XML) Schema [Diagram Viewer](https://terminaljack.github.io/stui/ScmlSchemaViewer/scml_schema_viewer.html)  (Created from [this file](https://github.com/TerminalJack/stui/blob/master/docs/scml-schema-definition.xsd).)
 * Free and paid Spriter project files can be found [here](https://opengameart.org/art-search?keys=spriter), [here](https://craftpix.net/?s=spriter), and [here](https://www.gamedeveloperstudio.com/).
+
+### SCML File Inspector
+
+If you cloned the full Stui project (that is, you didn't install via the Unity package) then you will have access to the `SCML File Inspector` development utility.
+
+The `SCML File Inspector` utility allows you to run custom code at specific points during the processing of a Spriter project file.  It comes in handy for doing things such as testing complex LINQ queries and dumping the results via the Dumpify package.
+
+You can launch the utility in three ways:
+- Right-click a `.scml` file in Unity’s Project Browser and select **SCML File Inspector...**
+- With a `.scml` file selected, go to **Assets** | **SCML File Inspector...**
+- Navigate to **Window** | **SCML File Inspector...**
+
+The first two options will automatically pre-fill the `Input File` field in the utility window.
+
+![SCML File Inspector](docs/Images/SCMLFileInspector.png)
