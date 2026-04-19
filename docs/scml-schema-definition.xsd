@@ -25,7 +25,7 @@
             <xs:attribute type="xs:string" name="name" use="optional"/>
           </xs:complexType>
         </xs:element>
-        <xs:element name="tag_list">
+        <xs:element name="tag_list" minOccurs="0">
           <xs:complexType>
             <xs:sequence>
               <xs:element name="i" maxOccurs="unbounded" minOccurs="0">
@@ -361,7 +361,31 @@
                                     <xs:attribute type="xs:byte" name="def" use="optional"/>
                                   </xs:complexType>
                                 </xs:element>
-                              </xs:sequence>
+                                <xs:element name="tagline" minOccurs="0">
+                                    <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="key" maxOccurs="unbounded" minOccurs="0">
+                                        <xs:complexType mixed="true">
+                                            <xs:sequence>
+                                            <xs:element name="tag" maxOccurs="unbounded" minOccurs="0">
+                                                <xs:complexType>
+                                                <xs:simpleContent>
+                                                    <xs:extension base="xs:string">
+                                                    <xs:attribute type="xs:byte" name="id" use="optional"/>
+                                                    <xs:attribute type="xs:byte" name="t" use="optional"/>
+                                                    </xs:extension>
+                                                </xs:simpleContent>
+                                                </xs:complexType>
+                                            </xs:element>
+                                            </xs:sequence>
+                                            <xs:attribute type="xs:byte" name="id" use="optional"/>
+                                            <xs:attribute type="xs:short" name="time" use="optional"/>
+                                        </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                    </xs:complexType>
+                                </xs:element>
+                               </xs:sequence>
                             </xs:complexType>
                           </xs:element>
                         </xs:sequence>
@@ -397,7 +421,7 @@
                               <xs:attribute type="xs:byte" name="def" use="optional"/>
                             </xs:complexType>
                           </xs:element>
-                          <xs:element name="tagline">
+                          <xs:element name="tagline" minOccurs="0">
                             <xs:complexType>
                               <xs:sequence>
                                 <xs:element name="key" maxOccurs="unbounded" minOccurs="0">
