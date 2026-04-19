@@ -802,16 +802,15 @@ namespace Spriter2UnityDX.EntityInfo
                     }
                     else
                     {
-                        SpriterSoundItem soundItem = new SpriterSoundItem();
-
-                        soundItem.soundItemName = $"{soundlineInfo.soundline.name}, {soundlineInfo.animationName} animation @ {key.time_s} seconds";
-                        soundItem.animationName = soundlineInfo.animationName;
-                        soundItem.soundlineName = soundlineInfo.soundline.name;
-                        soundItem.time = key.time_s;
-                        soundItem.folderId = soundObject.folder;
-                        soundItem.fileId = soundObject.file;
-                        soundItem.volume = soundObject.volume;
-                        soundItem.panning = soundObject.panning;
+                        SpriterSoundItem soundItem = new SpriterSoundItem
+                        {
+                            soundItemName = $"{soundlineInfo.soundline.name}, {soundlineInfo.animationName} animation @ {key.time_s} seconds",
+                            animationName = soundlineInfo.animationName,
+                            soundlineName = soundlineInfo.soundline.name,
+                            time = key.time_s,
+                            volume = soundObject.volume,
+                            panning = soundObject.panning
+                        };
 
                         string clipPath = $"{spriterProjDirectory}/{fileItem.name}";
                         soundItem.audioClip = (AudioClip)AssetDatabase.LoadAssetAtPath(clipPath, typeof(AudioClip));
@@ -824,7 +823,6 @@ namespace Spriter2UnityDX.EntityInfo
                         else
                         {
                             Log($"       Animation name: {soundItem.animationName}, time: {soundItem.time}, " +
-                                $"folderId: {soundItem.folderId}, fileId: {soundItem.fileId}, " +
                                 $"volume: {soundItem.volume}, panning: {soundItem.panning}");
 
                             soundItems.Add(soundItem);

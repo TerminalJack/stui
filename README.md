@@ -68,7 +68,7 @@ Leave the properties as-is and run the scene.  (Leave the `Cross Fade` property 
 
 Assuming that all has gone well, you are ready to use the generated prefabs, animation clips, etc. in your next masterpiece.
 
-If you need to reimport a `.scml` file at any time, right-click the file and click `Reimport`.  This will attempt to integrate any changes that have been made to the the `.scml` file into the existing prefabs and animator controllers.  The reimport will overwrite the animation clips but it will attempt to preserve any animation events that you have added.
+If you need to reimport a `.scml` file at any time, right-click the file and click `Reimport`.  This will attempt to integrate any changes that have been made to the `.scml` file into the existing prefabs and animator controllers.  The reimport will overwrite the animation clips but it will attempt to preserve any animation events that you have added.
 
 If there have been drastic changes to the `.scml` file since the prefab was last generated then reimporting over an existing prefab may seemingly corrupt the prefab.  At this point, the importer isn't particularly robust in this regard.  See the `Tips and Tricks` section on how to avoid (or at least minimize) putting any customizations in the hierarchy of the prefab.  If you do this then you can simply delete the prefab before reimporting to ensure that there are no issues with reimporting on top of a preexisting prefab.
 

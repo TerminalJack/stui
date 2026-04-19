@@ -535,11 +535,14 @@ namespace Spriter2UnityDX.Prefabs
                 DestroyImmediate(soundController);
             }
 
-            soundController = parentTransform.AddComponent<SoundController>();
-
-            foreach (var soundItem in entityInfo.soundItems)
+            if (entityInfo.soundItems.Count > 0)
             {
-                soundController.soundItems.Add(soundItem);
+                soundController = parentTransform.AddComponent<SoundController>();
+
+                foreach (var soundItem in entityInfo.soundItems)
+                {
+                    soundController.soundItems.Add(soundItem);
+                }
             }
         }
 
@@ -850,7 +853,7 @@ namespace Spriter2UnityDX.Prefabs
                     DestroyImmediate(pivotController);
                 }
 
-                child.localPosition = new Vector3(spriteInfo.x, spriteInfo.y, spriteInfo.z_index); // Z-index (sprite sorting order / -1000f) is stored in z.
+                child.localPosition = new Vector3(spriteInfo.x, spriteInfo.y, spriteInfo.z_index); // Z-index (sprite sorting order / -10000f) is stored in z.
                 child.localEulerAngles = new Vector3(0f, 0f, spriteInfo.angle);
                 child.localScale = new Vector3(spriteInfo.scale_x, spriteInfo.scale_y, 1f);
 

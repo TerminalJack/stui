@@ -13,9 +13,6 @@ namespace Spriter2UnityDX
         public string animationName;
         public float time;
 
-        public int folderId;
-        public int fileId;
-
         [Range(0f, 1f)]
         public float volume = 1f;
 

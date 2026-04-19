@@ -87,9 +87,11 @@ namespace Spriter2UnityDX.Animations
 
         public IEnumerator Build(Animation animation, IDictionary<int, Timeline> timeLines, IBuildTaskContext buildCtx)
         {
-            var clip = new AnimationClip();
-            clip.name = animation.name;
-            clip.frameRate = 1000f;
+            var clip = new AnimationClip
+            {
+                name = animation.name,
+                frameRate = 1000f
+            };
 
             if (buildCtx.IsCanceled) { yield break; }
             yield return $"{buildCtx.MessagePrefix}, creating animation clip '{clip.name}'";
@@ -313,11 +315,12 @@ namespace Spriter2UnityDX.Animations
                     }
                     else
                     {
-                        var soundEvent = new AnimationEvent();
-
-                        soundEvent.functionName = nameof(SoundController.SoundController_PlaySound);
-                        soundEvent.time = soundItem.time;
-                        soundEvent.intParameter = soundIdx;
+                        var soundEvent = new AnimationEvent
+                        {
+                            functionName = nameof(SoundController.SoundController_PlaySound),
+                            time = soundItem.time,
+                            intParameter = soundIdx
+                        };
 
                         animEvents.Add(soundEvent);
                     }
@@ -337,11 +340,12 @@ namespace Spriter2UnityDX.Animations
                 {
                     foreach (var key in eventline.keys)
                     {
-                        var spriterEvent = new AnimationEvent();
-
-                        spriterEvent.functionName = nameof(EventController.EventController_HandleEvent);
-                        spriterEvent.time = key.time;
-                        spriterEvent.stringParameter = eventline.name;
+                        var spriterEvent = new AnimationEvent
+                        {
+                            functionName = nameof(EventController.EventController_HandleEvent),
+                            time = key.time,
+                            stringParameter = eventline.name
+                        };
 
                         animEvents.Add(spriterEvent);
                     }
