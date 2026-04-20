@@ -86,7 +86,7 @@ namespace Spriter2UnityDX.Importing
     public class Metadata
     {
         [XmlElement("varline")] public List<Varline> varlines = new List<Varline>();
-        [XmlElement("tagline")] public Tagline tagline;
+        [XmlArray("tagline"), XmlArrayItem("key")] public List<TaglineKey> taglineKeys = new List<TaglineKey>();
     }
 
     public class VarDef : ScmlElement
@@ -143,11 +143,6 @@ namespace Spriter2UnityDX.Importing
     public class TagListItem : ScmlElement
     {
         [XmlAttribute] public string name { get; set; }
-    }
-
-    public class Tagline
-    {
-        [XmlElement("key")] public List<TaglineKey> keys = new List<TaglineKey>();
     }
 
     public class TaglineKey : SimpleKey
