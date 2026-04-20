@@ -440,6 +440,10 @@ If you are developing, maintaining, or troubleshooting Stui, then you may find t
 * Online Scml (XML) Schema [Diagram Viewer](https://terminaljack.github.io/stui/ScmlSchemaViewer/scml_schema_viewer.html)  (Created from [this file](https://github.com/TerminalJack/stui/blob/master/docs/scml-schema-definition.xsd).)
 * Free and paid Spriter project files can be found [here](https://opengameart.org/art-search?keys=spriter), [here](https://craftpix.net/?s=spriter), and [here](https://www.gamedeveloperstudio.com/).
 
+### Extra Logging
+
+You can enable additional logging for Spriter project imports.  At the moment, only the `SpriterEntityInfo` class emits this extra debugging output.  To turn it on, add the symbol `ENABLE_STUI_DEBUG_LOGS` to your project’s **Scripting Define Symbols**.
+
 ### SCML File Inspector
 
 If you cloned the full Stui project (that is, you didn't install via the Unity package) then you will have access to the `SCML File Inspector` development utility.
