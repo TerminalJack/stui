@@ -415,12 +415,9 @@ Once the output files are generated, Unity will kick-off an import.  This includ
 
 ## License.
 
-At this time, this project has the same license as the original project.  The text of which is as follows:
+This project is licensed under the MIT License.  See the [LICENSE.TXT](https://github.com/TerminalJack/stui/LICENSE.TXT) file for full details.
 
-> This project is open source. Anyone can use any part of this code however they wish. Feel free to use this code in your own projects, or expand on this code. If you have any improvements to the code itself, please visit https://github.com/Dharengo/Spriter2UnityDX and share your suggestions by creating a fork
--Dengar/Dharengo
-
-However, please note that the original Spriter2UnityDX project (Dharengo's repo) is no longer being maintained so please submit any issues, suggestions, fixes, new features, etc. to my repo at: https://github.com/TerminalJack/stui
+This project also incorporates portions of code from the Spriter2UnityDX project.  The original author provided an open‑use permission statement allowing unrestricted reuse and modification.  For transparency and attribution, the original notice is preserved in [THIRD_PARTY_NOTICES.md](https://github.com/TerminalJack/stui/THIRD_PARTY_NOTICES.md).
 
 ## Credits.
 

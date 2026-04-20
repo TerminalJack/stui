@@ -1,4 +1,10 @@
-﻿//This project is open source. Anyone can use any part of this code however they wish
+﻿// Modifications Copyright (c) 2026 TerminalJack
+// Licensed under the MIT License. See the LICENSE.TXT file in the project root for details.
+//
+// Portions of this file are derived from the Spriter2UnityDX project.
+// The original author provided an open-use permission statement, preserved in THIRD_PARTY_NOTICES.md.
+
+//This project is open source. Anyone can use any part of this code however they wish
 //Feel free to use this code in your own projects, or expand on this code
 //If you have any improvements to the code itself, please visit
 //https://github.com/Dharengo/Spriter2UnityDX and share your suggestions by creating a fork
