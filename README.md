@@ -415,9 +415,9 @@ Once the output files are generated, Unity will kick-off an import.  This includ
 
 ## License.
 
-This project is licensed under the MIT License.  See the [LICENSE.TXT](https://github.com/TerminalJack/stui/LICENSE.TXT) file for full details.
+This project is licensed under the MIT License.  See the [LICENSE.TXT](https://github.com/TerminalJack/stui/blob/master/LICENSE.TXT) file for full details.
 
-This project also incorporates portions of code from the Spriter2UnityDX project.  The original author provided an open‑use permission statement allowing unrestricted reuse and modification.  For transparency and attribution, the original notice is preserved in [THIRD_PARTY_NOTICES.md](https://github.com/TerminalJack/stui/THIRD_PARTY_NOTICES.md).
+This project also incorporates portions of code from the Spriter2UnityDX project.  The original author provided an open‑use permission statement allowing unrestricted reuse and modification.  For transparency and attribution, the original notice is preserved in [THIRD_PARTY_NOTICES.md](https://github.com/TerminalJack/stui/blob/master/THIRD_PARTY_NOTICES.md).
 
 ## Credits.
 
