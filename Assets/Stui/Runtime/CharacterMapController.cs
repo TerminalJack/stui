@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Spriter2UnityDX
+namespace Stui
 {
     [Serializable]
     public class SpriteMapTarget

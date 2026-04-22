@@ -19,14 +19,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Spriter2UnityDX.Prefabs
+namespace Stui.Prefabs
 {
     using Importing;
     using Animations;
     using EntityInfo;
 
     using UnityEngine.Rendering;
-    using Spriter2UnityDX.Extensions;
+    using Stui.Extensions;
     using Unity.VisualScripting;
 
     public class PrefabBuilder : UnityEngine.Object
@@ -670,7 +670,7 @@ namespace Spriter2UnityDX.Prefabs
 
                     if (srcSprite == null)
                     {
-                        Debug.LogWarning($"Spriter2UnityDX: ProcessCharacterMaps(): For entity '{entity.name}', " +
+                        Debug.LogWarning($"Stui: ProcessCharacterMaps(): For entity '{entity.name}', " +
                             $"character map '{characterMap.name}', the source sprite at folder: {mapInstruction.folder}, " +
                             $"file: {mapInstruction.file} wasn't found.");
 
@@ -685,7 +685,7 @@ namespace Spriter2UnityDX.Prefabs
 
                         if (targetSprite == null)
                         {
-                            Debug.LogWarning($"Spriter2UnityDX: ProcessCharacterMaps(): For entity '{entity.name}', " +
+                            Debug.LogWarning($"Stui: ProcessCharacterMaps(): For entity '{entity.name}', " +
                                 $"character map '{characterMap.name}', the target sprite at folder: {mapInstruction.folder}, " +
                                 $"file: {mapInstruction.file} wasn't found.");
 
@@ -704,7 +704,7 @@ namespace Spriter2UnityDX.Prefabs
                     }
                     else
                     {
-                        Debug.LogWarning($"Spriter2UnityDX: ProcessCharacterMaps(): For entity '{entity.name}', " +
+                        Debug.LogWarning($"Stui: ProcessCharacterMaps(): For entity '{entity.name}', " +
                             $"character map '{characterMap.name}', the source sprite at folder: {mapInstruction.folder}, " +
                             $"file: {mapInstruction.file} doesn't exist in the base map.");
                     }
@@ -761,7 +761,7 @@ namespace Spriter2UnityDX.Prefabs
 
                     if (spriterBoneInfo == null || spriterBoneInfo.type != ObjectType.bone)
                     {
-                        Debug.LogWarning($"Spriter2UnityDX: ProcessBones() was unable to find bone info for bone '{timeLine.name}'.");
+                        Debug.LogWarning($"Stui: ProcessBones() was unable to find bone info for bone '{timeLine.name}'.");
                         continue;
                     }
 
@@ -819,7 +819,7 @@ namespace Spriter2UnityDX.Prefabs
                 {   // Don't log a warning if this was one of the unsupported Spriter object types.
                     if (spriterObjectInfo == null)
                     {
-                        Debug.LogWarning($"Spriter2UnityDX: ProcessSprites() was unable to find object info for sprite '{timeLine.name}'.");
+                        Debug.LogWarning($"Stui: ProcessSprites() was unable to find object info for sprite '{timeLine.name}'.");
                     }
 
                     continue;
@@ -935,7 +935,7 @@ namespace Spriter2UnityDX.Prefabs
                 {   // Don't log a warning if this was one of the unsupported Spriter object types.
                     if (spriterObjectInfo == null)
                     {
-                        Debug.LogWarning($"Spriter2UnityDX: ProcessActionPoints() was unable to find object info for action point '{timeLine.name}'.");
+                        Debug.LogWarning($"Stui: ProcessActionPoints() was unable to find object info for action point '{timeLine.name}'.");
                     }
 
                     continue;

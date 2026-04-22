@@ -8,7 +8,7 @@ using UnityEngine;
 
 // This script exists to provide compatibility between a wide variety of Unity versions.
 
-namespace Spriter2UnityDX
+namespace Stui
 {
     [ExecuteAlways]
     public class SpriteVisibility : MonoBehaviour

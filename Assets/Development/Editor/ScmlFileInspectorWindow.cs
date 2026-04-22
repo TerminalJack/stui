@@ -10,13 +10,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Serialization;
-using Spriter2UnityDX.EntityInfo;
-using Spriter2UnityDX.Importing;
-using Spriter2UnityDX.Prefabs;
+using Stui.EntityInfo;
+using Stui.Importing;
+using Stui.Prefabs;
 using UnityEditor;
 using UnityEngine;
 using UnityEditor.IMGUI.Controls;
-using Spriter2UnityDX;
+using Stui;
 using Unity.VisualScripting;
 
 public class ScmlFileInspectorWindow : EditorWindow
@@ -562,7 +562,7 @@ public class ScmlFileInspectorWindow : EditorWindow
             var spriterProjDirectory = Path.GetDirectoryName(ScmlPath);
 
             var folders = new Dictionary<int, IDictionary<int, Sprite>>();
-            var fileInfo = new Dictionary<int, IDictionary<int, Spriter2UnityDX.Importing.File>>();
+            var fileInfo = new Dictionary<int, IDictionary<int, Stui.Importing.File>>();
 
             // Process the folder info only when SpriterEntityInfo is preprocessing the Spriter project.
             if (PreprocessWithSpriterEntityInfo)
@@ -570,7 +570,7 @@ public class ScmlFileInspectorWindow : EditorWindow
                 foreach (var folder in ScmlObject.folders)
                 {
                     var files = folders[folder.id] = new Dictionary<int, Sprite>();
-                    var fi = fileInfo[folder.id] = new Dictionary<int, Spriter2UnityDX.Importing.File>();
+                    var fi = fileInfo[folder.id] = new Dictionary<int, Stui.Importing.File>();
 
                     foreach (var file in folder.files)
                     {

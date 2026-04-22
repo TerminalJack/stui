@@ -6,7 +6,7 @@
 
 using UnityEngine;
 
-namespace Spriter2UnityDX
+namespace Stui
 {
     [DisallowMultipleComponent]
     public class SpriterTag : MonoBehaviour

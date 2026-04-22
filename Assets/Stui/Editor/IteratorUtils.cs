@@ -7,7 +7,7 @@
 using System;
 using System.Collections;
 
-namespace Spriter2UnityDX
+namespace Stui
 {
     public static class IteratorUtils
     {

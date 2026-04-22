@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Spriter2UnityDX.EntityInfo
+namespace Stui.EntityInfo
 {
     using Importing;
     using UnityEditor;

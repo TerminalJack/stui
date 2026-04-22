@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace Spriter2UnityDX
+namespace Stui
 {
     [DisallowMultipleComponent]
     public class SpriterEventListener : MonoBehaviour

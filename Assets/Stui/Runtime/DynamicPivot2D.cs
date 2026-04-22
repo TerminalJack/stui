@@ -10,7 +10,7 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-namespace Spriter2UnityDX
+namespace Stui
 {
     /// <summary>
     /// Attach this to a parent GameObject.

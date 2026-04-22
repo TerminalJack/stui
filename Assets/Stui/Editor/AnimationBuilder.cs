@@ -19,7 +19,7 @@ using System.Linq;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
 
-namespace Spriter2UnityDX.Animations
+namespace Stui.Animations
 {
     using Importing;
     using EntityInfo;
@@ -924,7 +924,7 @@ namespace Spriter2UnityDX.Animations
                 }
                 else
                 {
-                    Debug.LogWarning("Spriter2UnityDX: Cannot find virtual parent's transform index!");
+                    Debug.LogWarning("Stui: Cannot find virtual parent's transform index!");
                 }
             }
 

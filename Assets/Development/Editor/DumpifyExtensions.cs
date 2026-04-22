@@ -8,13 +8,13 @@
 
 using UnityEngine;
 using Dumpify;
-using Spriter2UnityDX.Importing;
+using Stui.Importing;
 using System.Collections;
 using System.Threading;
 using System;
 using System.Runtime.CompilerServices;
 
-namespace Spriter2UnityDX.Extensions
+namespace Stui.Extensions
 {
     public static class UnityDumpifyExtensions
     {

@@ -6,7 +6,7 @@
 
 using UnityEngine;
 
-namespace Spriter2UnityDX.Extensions
+namespace Stui.Extensions
 {
     public static class CustomExtensions
     {

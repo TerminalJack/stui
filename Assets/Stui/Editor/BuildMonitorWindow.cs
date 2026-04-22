@@ -9,7 +9,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Spriter2UnityDX.Importing
+namespace Stui.Importing
 {
     public interface IBuildTaskContext
     {
@@ -76,7 +76,7 @@ namespace Spriter2UnityDX.Importing
             if (_isRunning)
             {   // User clicked the windows 'X' to close it during an import.
                 _isCanceled = true;
-                Debug.LogWarning("Spriter2UnityDX: The Spriter Import Status window has been closed during an " +
+                Debug.LogWarning("Stui: The Spriter Import Status window has been closed during an " +
                     "import without properly canceling the import.  The generated files will likely be unusable.");
             }
         }

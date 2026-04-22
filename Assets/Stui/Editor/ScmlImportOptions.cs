@@ -8,7 +8,7 @@ using UnityEditor;
 using UnityEngine;
 using System.Collections;
 
-namespace Spriter2UnityDX.Importing
+namespace Stui.Importing
 {
     public class ScmlImportOptionsWindow : EditorWindow
     {

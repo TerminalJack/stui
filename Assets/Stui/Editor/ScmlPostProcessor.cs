@@ -18,7 +18,7 @@ using System.Xml.Serialization;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Spriter2UnityDX.PostProcessing
+namespace Stui.PostProcessing
 {
     using Importing;
     using Prefabs;
@@ -103,7 +103,7 @@ namespace Spriter2UnityDX.PostProcessing
     }
 }
 
-namespace Spriter2UnityDX
+namespace Stui
 {
     public class ScmlProcessingInfo
     {

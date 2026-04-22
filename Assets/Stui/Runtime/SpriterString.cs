@@ -7,7 +7,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Spriter2UnityDX
+namespace Stui
 {
     [DisallowMultipleComponent]
     public class SpriterString : MonoBehaviour

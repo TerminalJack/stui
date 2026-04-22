@@ -6,7 +6,7 @@
 
 using UnityEngine;
 
-namespace Spriter2UnityDX
+namespace Stui
 {
     [ExecuteAlways]
     public class SortingOrderUpdater : MonoBehaviour

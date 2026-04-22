@@ -14,7 +14,7 @@ using UnityEditor.SceneManagement;
 using UnityEditor.Experimental.SceneManagement;
 #endif
 
-namespace Spriter2UnityDX
+namespace Stui
 {
     [CustomEditor(typeof(CharacterMapController))]
     public class CharacterMapControllerEditor : Editor

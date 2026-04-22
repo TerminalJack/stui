@@ -19,7 +19,7 @@ using System.Collections.Generic;
 // All of these classes are containers for the data that is read from the .scml file
 // It is directly deserialized into these classes, although some individual values are
 // modified into a format that can be used by Unity
-namespace Spriter2UnityDX.Importing
+namespace Stui.Importing
 {
     [XmlRoot("spriter_data")]
     public class ScmlObject
@@ -580,7 +580,7 @@ namespace Spriter2UnityDX.Importing
         };
 
         private static readonly string WarningMsg =
-            "Spriter2UnityDX: The Spriter entity name '{0}' contains one or more characters that are invalid for " +
+            "Stui: The Spriter entity name '{0}' contains one or more characters that are invalid for " +
             "prefab filenames and animation controller filenames.  It has been renamed to '{1}'.  Change the " +
             "entity name in Spriter to avoid this warning.";
 
@@ -616,7 +616,7 @@ namespace Spriter2UnityDX.Importing
         };
 
         private static readonly string WarningMsg =
-            "Spriter2UnityDX: The Spriter animation name '{0}' contains one or more characters that are invalid for " +
+            "Stui: The Spriter animation name '{0}' contains one or more characters that are invalid for " +
             "Unity animation state names and/or animation clip filenames.  It has been renamed to '{1}'.  Change the " +
             "animation name in Spriter to avoid this warning.";
 

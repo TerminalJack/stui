@@ -8,7 +8,7 @@ using System.Collections;
 using UnityEngine;
 using Dumpify;
 
-namespace Spriter2UnityDX
+namespace Stui
 {
     using Importing;
     using EntityInfo;

@@ -9,7 +9,7 @@ using UnityEngine;
 using UnityEditor;
 using System;
 
-namespace Spriter2UnityDX
+namespace Stui
 {
     public static class CurveBuilder
     {

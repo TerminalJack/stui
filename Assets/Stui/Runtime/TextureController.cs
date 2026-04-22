@@ -12,7 +12,7 @@
 
 using UnityEngine;
 
-namespace Spriter2UnityDX
+namespace Stui
 {
 	// This component is automatically added to sprite parts that have multiple possible
 	// textures, such as facial expressions. This component will override any changes

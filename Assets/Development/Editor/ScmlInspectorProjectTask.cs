@@ -7,7 +7,7 @@
 using System.Collections;
 using UnityEngine;
 
-namespace Spriter2UnityDX
+namespace Stui
 {
     using Importing;
 

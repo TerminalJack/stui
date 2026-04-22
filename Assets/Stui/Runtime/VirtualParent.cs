@@ -7,7 +7,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Spriter2UnityDX
+namespace Stui
 {
     [ExecuteAlways]
     [DefaultExecutionOrder(300)]
