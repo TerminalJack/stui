@@ -363,10 +363,45 @@ namespace Spriter2UnityDX.Prefabs
             }
         }
 
+        private void BuildSpriterTagTransforms(Transform metadataTransform, List<TagListItem> tagDefs)
+        {
+            // Build the tag transforms under the given metadata transform.
+            //
+            //   ...
+            //   └── ... metadata
+            //       └── tagname1 (Tag)
+            //       └── tagname2 (Tag)
+
+            foreach (var tagDef in tagDefs)
+            {
+                var tagTransformName = $"{tagDef.name} (Tag)";
+
+                var tagTransform = metadataTransform.Find(tagTransformName);
+                if (tagTransform == null)
+                {
+                    tagTransform = new GameObject(tagTransformName).transform;
+                }
+
+                tagTransform.SetParent(metadataTransform, worldPositionStays: false);
+
+                // Remove any preexisting tag component.
+                var tagComponent = tagTransform.gameObject.GetComponent<SpriterTag>();
+                if (tagComponent != null)
+                {
+                    DestroyImmediate(tagComponent);
+                }
+
+                // Create tag component.
+                tagComponent = tagTransform.gameObject.AddComponent<SpriterTag>();
+
+                tagComponent.tagName = tagDef.name;
+            }
+        }
+
         private void ProcessEntityScopedMetadata(Transform parentTransform, SpriterEntityInfo entityInfo)
         {
-            // If this entity has any metadata (variables and/or tags) at the entity-level then create the neccessary hierarchy.
-            // The hierarchy will look like the following:
+            // If this entity has any metadata (variables and/or tags) at the entity-level then create the neccessary
+            // hierarchy.  The hierarchy will look like the following:
             //
             //   entity_name
             //   └── entity_name metadata
@@ -390,30 +425,7 @@ namespace Spriter2UnityDX.Prefabs
 
                 BuildSpriterVariableTransforms(metadataTransform, entityInfo.variableDefs.Values.ToList());
 
-                foreach (var tagDef in entityInfo.tagDefs.Values)
-                {
-                    var tagTransformName = $"{tagDef.name} (Tag)";
-
-                    var tagTransform = metadataTransform.Find(tagTransformName);
-                    if (tagTransform == null)
-                    {
-                        tagTransform = new GameObject(tagTransformName).transform;
-                    }
-
-                    tagTransform.SetParent(metadataTransform, worldPositionStays: false);
-
-                    // Remove any preexisting tag component.
-                    var tagComponent = tagTransform.gameObject.GetComponent<SpriterTag>();
-                    if (tagComponent != null)
-                    {
-                        DestroyImmediate(tagComponent);
-                    }
-
-                    // Create tag component.
-                    tagComponent = tagTransform.gameObject.AddComponent<SpriterTag>();
-
-                    tagComponent.tagName = tagDef.name;
-                }
+                BuildSpriterTagTransforms(metadataTransform, entityInfo.tagDefs.Values.ToList());
             }
             else if (metadataTransform != null)
             {   // If a metadata game object exists, remove it.
@@ -423,20 +435,21 @@ namespace Spriter2UnityDX.Prefabs
 
         private void ProcessObjectScopedMetadata(Transform parentTransform, SpriterEntityInfo.SpriterInfoBase objInfo)
         {
-            // If this object (aka timeline, which may also be an event) has any metadata (just variables in the case of
-            // an object/timeline/event) then create the neccessary hierarchy.  The hierarchy will look like the
-            // following:
+            // If this object (aka timeline, which may also be an event) has any metadata then create the neccessary
+            // hierarchy.  The hierarchy will look like the following:
             //
             //   ...
             //   └── object_name (parentTransform)
             //       └── object_name metadata
             //           └── object_varname1 (String variable)
             //           └── object_varname2 (Float variable)
+            //           └── object_tagname1 (Tag)
+            //           └── object_tagname2 (Tag)
 
             string metadataGameObjectName = $"{parentTransform.name} metadata";
             var metadataTransform = parentTransform.Find(metadataGameObjectName);
 
-            if (objInfo.HasVariables)
+            if (objInfo.HasMetadata)
             {
                 if (metadataTransform == null)
                 {
@@ -446,6 +459,9 @@ namespace Spriter2UnityDX.Prefabs
                 metadataTransform.SetParent(parentTransform, worldPositionStays: false);
 
                 BuildSpriterVariableTransforms(metadataTransform, objInfo.variableDefs.Values.ToList());
+
+                BuildSpriterTagTransforms(metadataTransform, objInfo.tagDefs.Values.ToList());
+
             }
             else if (metadataTransform != null)
             {   // If a metadata game object exists, remove it.
@@ -464,6 +480,7 @@ namespace Spriter2UnityDX.Prefabs
             //       └── event_with_metadata (Event)
             //           └── event_with_metadata metadata
             //               └── event_varname1 (Float variable)
+            //               └── event_tagname1 (Tag)
             //
             // Note that ProcessObjectScopedMetadata() will handle creation of the metadata game objects.
             //
