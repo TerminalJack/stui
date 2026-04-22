@@ -17,11 +17,12 @@ namespace Spriter2UnityDX.EntityInfo
     using Debug = UnityEngine.Debug;
 
     // This class is used for tracking information that spans across all of an entity's animations.
-    // It also validates and post processes an entity's Spriter file information.
+    // It also validates and preprocesses an entity's Spriter file information before the builders work with the entity.
 
     public class SpriterEntityInfo
     {
-        public abstract class SpriterInfoBase // Information common to sprites and bones.
+        // Information common to sprites, bones, and action points.  Events store their metadata here.
+        public abstract class SpriterInfoBase
         {
             public string name;
             public ObjectType type;
@@ -32,6 +33,7 @@ namespace Spriter2UnityDX.EntityInfo
 
             public List<string> parentBoneNames = new List<string>(); // Empty if there aren't any.
 
+            // This is the object-scoped and event-scoped metadata.  The key for these is the id.
             public Dictionary<int, VarDef> variableDefs = new Dictionary<int, VarDef>(); // Empty if there aren't any variables for this object.
             public Dictionary<int, TagListItem> tagDefs = new Dictionary<int, TagListItem>(); // Empty if there aren't any tags for this object.
 
@@ -70,7 +72,7 @@ namespace Spriter2UnityDX.EntityInfo
             }
         }
 
-        // Note!: Bones and objects can have the same name so don't try to mix these into one collection.
+        // Note!: Bones and objects can have the same name in older Spriter projects so don't try to mix these into one collection.
         public Dictionary<string, SpriterObjectInfo> objectInfo = new Dictionary<string, SpriterObjectInfo>();
         public Dictionary<string, SpriterBoneInfo> boneInfo = new Dictionary<string, SpriterBoneInfo>();
 
@@ -78,9 +80,9 @@ namespace Spriter2UnityDX.EntityInfo
 
         public List<SpriterSoundItem> soundItems = new List<SpriterSoundItem>();
 
-        // The key for these is the id.
+        // This is the entity-scoped metadata.  The key for these is the id.
         public Dictionary<int, VarDef> variableDefs = new Dictionary<int, VarDef>(); // Empty if there aren't any entity-scoped variables.
-        public Dictionary<int, TagListItem> tagDefs = new Dictionary<int, TagListItem>(); // Empty if there aren't any tags.
+        public Dictionary<int, TagListItem> tagDefs = new Dictionary<int, TagListItem>(); // Empty if there aren't any entity-scoped tags.
 
         public bool HasMetadata { get { return HasVariables || HasTags;  } }
         public bool HasVariables { get { return variableDefs.Count > 0;  } }
@@ -92,7 +94,7 @@ namespace Spriter2UnityDX.EntityInfo
         {
         }
 
-        public IEnumerator Process(string spriterProjDirectory, ScmlObject scmlObj, Entity entity,
+        public IEnumerator Process(string spriterProjDirectory, ScmlObject scmlObject, Entity entity,
             Dictionary<int, IDictionary<int, File>> fileInfo, IBuildTaskContext buildCtx)
         {
             _entityName = entity.name;
@@ -121,9 +123,15 @@ namespace Spriter2UnityDX.EntityInfo
             yield return $"{buildCtx.MessagePrefix}, checking for animated bone alphas";
             CheckForAnimatedBoneAlphas(entity);
 
+            LogProjectScopedTagInfo(scmlObject); // The log messages will only be seen when debug logging is enabled.
+
             if (buildCtx.IsCanceled) { yield break; }
             yield return $"{buildCtx.MessagePrefix}, preprocessing entity metadata";
-            PreprocessEntityMetadata(scmlObj, entity); // Populates entity's variableDefs and tagDefs collections.
+            PreprocessEntityScopedMetadata(scmlObject, entity); // Populates entity's variableDefs and tagDefs collections.
+
+            if (buildCtx.IsCanceled) { yield break; }
+            yield return $"{buildCtx.MessagePrefix}, assigning entity metadata references";
+            AssignEntityScopedMetadataReferences(scmlObject, entity);
 
             if (buildCtx.IsCanceled) { yield break; }
             yield return $"{buildCtx.MessagePrefix}, preprocessing bones";
@@ -139,11 +147,27 @@ namespace Spriter2UnityDX.EntityInfo
 
             if (buildCtx.IsCanceled) { yield break; }
             yield return $"{buildCtx.MessagePrefix}, preprocessing Spriter events";
-            PreprocessEvents(entity); // Adds to objectInfo collection.
+            PreprocessEvents(entity); // Adds to objectInfo collection (weird case.)
+
+            if (buildCtx.IsCanceled) { yield break; }
+            yield return $"{buildCtx.MessagePrefix}, preprocessing object-scoped metadata";
+            PreprocessObjectScopedMetadata(scmlObject, entity);
+
+            if (buildCtx.IsCanceled) { yield break; }
+            yield return $"{buildCtx.MessagePrefix}, preprocessing event-scoped metadata";
+            PreprocessEventScopedMetadata(scmlObject, entity);
+
+            if (buildCtx.IsCanceled) { yield break; }
+            yield return $"{buildCtx.MessagePrefix}, assigning object-scoped metadata references";
+            AssignObjectScopedMetadataReferences(scmlObject, entity);
+
+            if (buildCtx.IsCanceled) { yield break; }
+            yield return $"{buildCtx.MessagePrefix}, assigning event-scoped metadata references";
+            AssignEventScopedMetadataReferences(scmlObject, entity);
 
             if (buildCtx.IsCanceled) { yield break; }
             yield return $"{buildCtx.MessagePrefix}, preprocessing Spriter sounds";
-            PreprocessSounds(spriterProjDirectory, scmlObj, entity); // Validates and adds to soundItems collection.
+            PreprocessSounds(spriterProjDirectory, scmlObject, entity); // Validates and adds to soundItems collection.
 
             if (buildCtx.IsCanceled) { yield break; }
             yield return $"{buildCtx.MessagePrefix}, preprocessing unsupported types";
@@ -508,20 +532,38 @@ namespace Spriter2UnityDX.EntityInfo
             }
         }
 
-        private void PreprocessEntityMetadata(ScmlObject scmlObj, Entity entity)
+        private void LogProjectScopedTagInfo(ScmlObject scmlObject)
         {
-            // Populate variableDefs and tagDefs collections.  Variables are defined at the entity level or at the
-            // timeline (bone, sprite, action point, event, etc.) level.  Tags are _defined_ at the entity level but
-            // they can be used in taglines at both the entity level and the timeline level--in which case they are
-            // separate tags that just happen to have the same name.
+            if (scmlObject.tags.Count > 0)
+            {
+                Log("This Spriter project has the following tag definitions:");
+
+                foreach (var tagDef in scmlObject.tags)
+                {
+                    Log($"    tag id: {tagDef.id}, tag name: {tagDef.name}");
+                }
+
+                Log("Note that tags are _defined_ at the project scope but are still scoped similar to variables.");
+                Log("Because of this, you can have tags with the same name but with different scopes (entity-, object-,");
+                Log("or event-scoped.)  In this case they are completely different tags and just happen to share the same name.");
+            }
+            else
+            {
+                Log($"This Spriter project has no tag definitions.");
+            }
+        }
+
+        private void PreprocessEntityScopedMetadata(ScmlObject scmlObject, Entity entity)
+        {
+            // Populate this.variableDefs and this.tagDefs collections.
 
             if (entity.variableDefs.Count > 0)
             {
-                Log($"Entity '{entity.name}' has the following variable definitions:");
+                Log($"Entity '{entity.name}' has the following entity-scoped variable definitions:");
 
                 foreach (var variableDef in entity.variableDefs)
                 {
-                    Log($"    variable name: {variableDef.name}, type: {variableDef.type}, default value: {variableDef.defaultValue}");
+                    Log($"    variable name: {variableDef.name}, type: {variableDef.type}, default value: '{variableDef.defaultValue}'");
 
                     if (variableDef.type == VarType.String)
                     {   // Figure out what all of the possible string values this string variable can have.
@@ -560,71 +602,164 @@ namespace Spriter2UnityDX.EntityInfo
                 Log($"Entity '{entity.name}' has no variable definitions.");
             }
 
-            // ! More work to be done.
+            var entityScopedTagIds = (
+                from anim in entity.animations
+                where anim.metadata != null
+                from taglineKeys in anim.metadata.taglineKeys
+                from tags in taglineKeys.tags
+                select tags.tagId
+            )
+            .Distinct()
+            .OrderBy(id => id)
+            .ToList();
 
-            if (scmlObj.tags.Count > 0)
+            if (entityScopedTagIds.Count > 0)
             {
-                Log($"Entity '{entity.name}' has the following tag definitions:");
+                Log($"Entity '{entity.name}' uses the following entity-scoped tags:");
 
-                foreach (var tagDef in scmlObj.tags)
+                foreach (var tagId in entityScopedTagIds)
                 {
-                    Log($"    tag id: {tagDef.id}, tag name: {tagDef.name}");
-                    tagDefs.Add(tagDef.id, tagDef);
-                }
+                    var tagDef = scmlObject.tags.FirstOrDefault(t => t.id == tagId);
 
+                    if (tagDef != null)
+                    {
+                        Log($"    tag id: {tagDef.id}, tag name: {tagDef.name}");
+                        tagDefs.Add(tagDef.id, tagDef);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"An invalid id ({tagId}) was found while processing the entity-scoped tag " +
+                            $"metadata for entity: '{entity.name}'.  A tag list item with that id was not found.");
+                    }
+                }
             }
             else
             {
-                Log($"Entity '{entity.name}' has no tag definitions.");
+                Log($"Entity '{entity.name}' uses no entity-scoped tags.");
             }
         }
 
-        private void PreprocessObjectMetadata(Entity entity, SpriterInfoBase info)
+        private void AssignEntityScopedMetadataReferences(ScmlObject scmlObject, Entity entity)
         {
-            var allVarDefs = entity.objectInfos.FirstOrDefault(o => o.name == info.name && o.objectType == info.type)?.variableDefs;
+            // Put the appropriate references in entity.animation[].metadata.varlines[].varDef and
+            // entity.animation[].metadata.taglineKeys[].tags[].tagName.
 
-            if (allVarDefs != null && allVarDefs.Count > 0)
+            foreach (var anim in entity.animations)
             {
-                Log($"        '{info.name}' has the following variable definitions:");
-
-                foreach (var variableDef in allVarDefs)
+                if (anim.metadata == null)
                 {
-                    Log($"            variable name: {variableDef.name}, type: {variableDef.type}, default value: {variableDef.defaultValue}");
+                    continue;
+                }
 
-                    if (variableDef.type == VarType.String)
-                    {   // Figure out what all of the possible string values this string variable can have.
-                        List<string> possibleStringValues;
+                for (int i = 0; i < anim.metadata.varlines.Count; ++i)
+                {
+                    var varline = anim.metadata.varlines[i];
 
-                        if (info.type == ObjectType.spriterEvent)
+                    varline.varDef = variableDefs.GetValueOrDefault(varline.varDefId);
+
+                    if (varline.varDef != null)
+                    {
+                        Log($"Entity-scoped varline varDef assigned for entity: {entity.name}, animation: {anim.name}, " +
+                            $"metadata.varlines[{i}], (id: {varline.id}, varDefId: {varline.varDefId})");
+                        Log($"    variable name: {varline.varDef.name}, type: {varline.varDef.type}, " +
+                            $"default value: '{varline.varDef.defaultValue}'");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"While processing the variable metadata (at index {i}) for entity: '{entity.name}', " +
+                            $"animation: '{anim.name}', a variable definition for id: {varline.varDefId} was missing " +
+                            $"from the entity-scoped variable definitions.");
+                    }
+                }
+
+                for (int keyIdx = 0; keyIdx < anim.metadata.taglineKeys.Count; ++keyIdx)
+                {
+                    var taglineKey = anim.metadata.taglineKeys[keyIdx];
+
+                    for (int tagIdx = 0; tagIdx < taglineKey.tags.Count; ++tagIdx)
+                    {
+                        var tag = taglineKey.tags[tagIdx];
+
+                        var tagListItem = tagDefs.GetValueOrDefault(tag.tagId);
+                        tag.tagName = tagListItem?.name;
+
+                        if (tag.tagName != null)
                         {
-                            possibleStringValues = entity.animations?
-                                .SelectMany(a => a.eventlines)
-                                .Where(e => e.name == info.name)
-                                .SelectMany(e => e.metadata?.varlines ?? Enumerable.Empty<Varline>())
-                                .Where(v => v.varDefId == variableDef.id)
-                                .SelectMany(v => v.keys ?? Enumerable.Empty<VarlineKey>())
-                                .Select(k => k.value)
-                                .Where(v => v != null)
-                                .Distinct()
-                                .OrderBy(v => v)
-                                .ToList()
-                            ?? new List<string>();
+                            Log($"Entity-scoped tagline TagInfo name assigned for entity: {entity.name}, " +
+                                $"animation: {anim.name}, metadata.taglines[{keyIdx}].tags[{tagIdx}], (id: {tag.id}, " +
+                                $"tagId: {tag.tagId})");
+                            Log($"    tag name: {tag.tagName}");
                         }
                         else
                         {
-                            possibleStringValues = entity.animations?
-                                .SelectMany(a => a.timelines ?? Enumerable.Empty<Timeline>())
-                                .Where(t => t.name == info.name && t.objectType == info.type)
-                                .SelectMany(t => t.metadata?.varlines ?? Enumerable.Empty<Varline>())
-                                .Where(v => v.varDefId == variableDef.id)
-                                .SelectMany(v => v.keys ?? Enumerable.Empty<VarlineKey>())
-                                .Select(k => k.value)
-                                .Where(v => v != null)
-                                .Distinct()
-                                .OrderBy(v => v)
-                                .ToList()
-                            ?? new List<string>();
+                            Debug.LogWarning($"While processing the tag metadata (at index [${keyIdx}][{tagIdx}]) " +
+                                $"for entity: '{entity.name}', animation: '{anim.name}', a tag definition for " +
+                                $"id: {tag.tagId} was missing from the tag definitions.");
                         }
+                    }
+                }
+            }
+        }
+
+        private void PreprocessObjectScopedMetadata(ScmlObject scmlObject, Entity entity)
+        {
+            Log($"Entity '{entity.name}', preprocessing object-scoped metadata for all bones...");
+
+            foreach (var boneInfo in boneInfo.Values.Where(o => o.type == ObjectType.bone))
+            {
+                DoPreprocessObjectScopedMetadata(scmlObject, entity, boneInfo);
+            }
+
+            Log($"Entity: '{entity.name}', preprocessing object-scoped metadata for all sprites...");
+
+            foreach (var spriteInfo in objectInfo.Values.Where(o => o.type == ObjectType.sprite))
+            {
+                DoPreprocessObjectScopedMetadata(scmlObject, entity, spriteInfo);
+            }
+
+            Log($"Entity: '{entity.name}', preprocessing object-scoped metadata for all action points...");
+
+            foreach (var actionPtInfo in objectInfo.Values.Where(o => o.type == ObjectType.point))
+            {
+                DoPreprocessObjectScopedMetadata(scmlObject, entity, actionPtInfo);
+            }
+        }
+
+        private void DoPreprocessObjectScopedMetadata(ScmlObject scmlObject, Entity entity, SpriterInfoBase info)
+        {
+            // Populate info.variableDefs and info.tagDefs collections
+
+            if (info.type == ObjectType.spriterEvent)
+            {
+                Debug.LogWarning("An object was passed to DoPreprocessObjectScopedMetadata() that has a type of 'event'.");
+                return;
+            }
+
+            var allVarDefs = entity.objectInfos.FirstOrDefault(o => o.name == info.name && o.objectType == info.type)?.variableDefs;
+
+            if (allVarDefs?.Count > 0)
+            {
+                Log($"    '{info.name}' has the following object-scoped variable definitions:");
+
+                foreach (var variableDef in allVarDefs)
+                {
+                    Log($"        variable name: {variableDef.name}, type: {variableDef.type}, default value: '{variableDef.defaultValue}'");
+
+                    if (variableDef.type == VarType.String)
+                    {   // Figure out what all of the possible string values this string variable can have.
+
+                        List<string> possibleStringValues = entity.animations?
+                            .SelectMany(a => a.timelines ?? Enumerable.Empty<Timeline>())
+                            .Where(t => t.name == info.name && t.objectType == info.type)
+                            .SelectMany(t => t.metadata?.varlines ?? Enumerable.Empty<Varline>())
+                            .Where(v => v.varDefId == variableDef.id)
+                            .SelectMany(v => v.keys ?? Enumerable.Empty<VarlineKey>())
+                            .Select(k => k.value)
+                            .Where(v => v != null)
+                            .Distinct()
+                            .OrderBy(v => v)
+                            .ToList()
+                        ?? new List<string>();
 
                         // Make sure the default value is the first element of the list...
 
@@ -645,8 +780,312 @@ namespace Spriter2UnityDX.EntityInfo
                 }
             }
 
-            // Note that objects can have taglines but the tag definitions are the same ones as those at the Spriter
-            // project level (which are put into SpriterEntityInfo.tagDefs.)
+            var objectScopedTagIds = (
+                from anim in entity.animations
+                from timeline in anim.timelines
+                where timeline.name == info.name && timeline.objectType == info.type && timeline.metadata != null
+                from taglineKeys in timeline.metadata.taglineKeys
+                from tags in taglineKeys.tags
+                select tags.tagId
+            )
+            .Distinct()
+            .OrderBy(id => id)
+            .ToList();
+
+            if (objectScopedTagIds.Count > 0)
+            {
+                Log($"    '{info.name}' uses the following object-scoped tags:");
+
+                foreach (var tagId in objectScopedTagIds)
+                {
+                    var tagDef = scmlObject.tags.FirstOrDefault(t => t.id == tagId);
+
+                    if (tagDef != null)
+                    {
+                        Log($"        tag id: {tagDef.id}, tag name: {tagDef.name}");
+                        info.tagDefs.Add(tagDef.id, tagDef);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"An invalid id ({tagId}) was found while processing the object-scoped tag " +
+                            $"metadata for entity: '{entity.name}', timeline: '{info.name}'.  A tag list item with " +
+                            "that id was not found.");
+                    }
+                }
+            }
+        }
+
+        private void PreprocessEventScopedMetadata(ScmlObject scmlObject, Entity entity)
+        {
+            Log($"Entity: '{entity.name}', preprocessing event-scoped metadata for all events...");
+
+            foreach (var eventInfo in objectInfo.Values.Where(o => o.type == ObjectType.spriterEvent))
+            {
+                DoPreprocessEventScopedMetadata(scmlObject, entity, eventInfo);
+            }
+        }
+
+        private void DoPreprocessEventScopedMetadata(ScmlObject scmlObject, Entity entity, SpriterInfoBase info)
+        {
+            // Populate info.variableDefs and info.tagDefs collections
+
+            if (info.type != ObjectType.spriterEvent)
+            {
+                Debug.LogWarning("An object was passed to DoPreprocessEventScopedMetadata() that does not have a type of 'event'.");
+                return;
+            }
+
+            var allVarDefs = entity.objectInfos.FirstOrDefault(o => o.name == info.name && o.objectType == info.type)?.variableDefs;
+
+            if (allVarDefs?.Count > 0)
+            {
+                Log($"    '{info.name}' has the following event-scoped variable definitions:");
+
+                foreach (var variableDef in allVarDefs)
+                {
+                    Log($"        variable name: {variableDef.name}, type: {variableDef.type}, default value: '{variableDef.defaultValue}'");
+
+                    if (variableDef.type == VarType.String)
+                    {   // Figure out what all of the possible string values this string variable can have.
+
+                        List<string> possibleStringValues = entity.animations?
+                            .SelectMany(a => a.eventlines)
+                            .Where(e => e.name == info.name)
+                            .SelectMany(e => e.metadata?.varlines ?? Enumerable.Empty<Varline>())
+                            .Where(v => v.varDefId == variableDef.id)
+                            .SelectMany(v => v.keys ?? Enumerable.Empty<VarlineKey>())
+                            .Select(k => k.value)
+                            .Where(v => v != null)
+                            .Distinct()
+                            .OrderBy(v => v)
+                            .ToList()
+                        ?? new List<string>();
+
+                        // Make sure the default value is the first element of the list...
+
+                        possibleStringValues.RemoveAll(s => s == variableDef.defaultValue);
+                        possibleStringValues.Insert(0, variableDef.defaultValue);
+
+                        variableDef.possibleStringValues = possibleStringValues;
+
+                        Log($"        '{variableDef.name}' has the possible string values:");
+
+                        foreach (var s in variableDef.possibleStringValues)
+                        {
+                            Log($"            '{s}'");
+                        }
+                    }
+
+                    info.variableDefs.Add(variableDef.id, variableDef);
+                }
+            }
+
+            var eventScopedTagIds = (
+                from anim in entity.animations
+                from eventline in anim.eventlines
+                where eventline.name == info.name && eventline.metadata != null
+                from taglineKeys in eventline.metadata.taglineKeys
+                from tags in taglineKeys.tags
+                select tags.tagId
+            )
+            .Distinct()
+            .OrderBy(id => id)
+            .ToList();
+
+            if (eventScopedTagIds.Count > 0)
+            {
+                Log($"    '{info.name}' uses the following event-scoped tags:");
+
+                foreach (var tagId in eventScopedTagIds)
+                {
+                    var tagDef = scmlObject.tags.FirstOrDefault(t => t.id == tagId);
+
+                    if (tagDef != null)
+                    {
+                        Log($"        tag id: {tagDef.id}, tag name: {tagDef.name}");
+                        info.tagDefs.Add(tagDef.id, tagDef);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"An invalid id ({tagId}) was found while processing the event-scoped tag " +
+                            $"metadata for entity: '{entity.name}', event: '{info.name}'.  A tag list item with that " +
+                            "id was not found.");
+                    }
+                }
+            }
+        }
+
+        private void AssignObjectScopedMetadataReferences(ScmlObject scmlObject, Entity entity)
+        {
+            Log($"Entity '{entity.name}', assigning object-scoped metadata references for all bones...");
+
+            foreach (var boneInfo in boneInfo.Values.Where(o => o.type == ObjectType.bone))
+            {
+                if (boneInfo.HasMetadata)
+                {
+                    DoAssignObjectScopedMetadataReferences(scmlObject, entity, boneInfo);
+                }
+            }
+
+            Log($"Entity '{entity.name}', assigning object-scoped metadata references for all sprites...");
+
+            foreach (var spriteInfo in objectInfo.Values.Where(o => o.type == ObjectType.sprite))
+            {
+                if (spriteInfo.HasMetadata)
+                {
+                    DoAssignObjectScopedMetadataReferences(scmlObject, entity, spriteInfo);
+                }
+            }
+
+            Log($"Entity '{entity.name}', assigning object-scoped metadata references for all action points...");
+
+            foreach (var actionPtInfo in objectInfo.Values.Where(o => o.type == ObjectType.point))
+            {
+                if (actionPtInfo.HasMetadata)
+                {
+                    DoAssignObjectScopedMetadataReferences(scmlObject, entity, actionPtInfo);
+                }
+            }
+        }
+
+        private void DoAssignObjectScopedMetadataReferences(ScmlObject scmlObject, Entity entity, SpriterInfoBase info)
+        {
+            // Call this only for non-event objInfos.  It will put the appropriate references in
+            // timeline.metadata.varlines[].varDef and timeline.metadata.taglineKeys[].tags[].tagName.
+
+            foreach (var anim in entity.animations)
+            {
+                foreach (var timeline in anim.timelines)
+                {
+                    if (timeline.metadata == null || timeline.name != info.name || timeline.objectType != info.type)
+                    {
+                        continue;
+                    }
+
+                    for (int i = 0; i < timeline.metadata.varlines.Count; ++i)
+                    {
+                        var varline = timeline.metadata.varlines[i];
+
+                        varline.varDef = info.variableDefs.GetValueOrDefault(varline.varDefId);
+
+                        if (varline.varDef != null)
+                        {
+                            Log($"    Object-scoped varline varDef assigned for entity: {entity.name}, animation: {anim.name}, " +
+                                $"timeline: {timeline.name}, metadata.varlines[{i}], (id: {varline.id}, varDefId: {varline.varDefId})");
+                            Log($"        variable name: {varline.varDef.name}, type: {varline.varDef.type}, " +
+                                $"default value: '{varline.varDef.defaultValue}'");
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"While processing the variable metadata (at index {i}) for entity: '{entity.name}', " +
+                                $"animation: '{anim.name}', timeline: '{timeline.name}', a variable definition for id: {varline.varDefId} " +
+                                "was missing from the object-scoped variable definitions.");
+                        }
+                    }
+
+                    for (int keyIdx = 0; keyIdx < timeline.metadata.taglineKeys.Count; ++keyIdx)
+                    {
+                        var taglineKey = timeline.metadata.taglineKeys[keyIdx];
+
+                        for (int tagIdx = 0; tagIdx < taglineKey.tags.Count; ++tagIdx)
+                        {
+                            var tag = taglineKey.tags[tagIdx];
+
+                            var tagListItem = info.tagDefs.GetValueOrDefault(tag.tagId);
+                            tag.tagName = tagListItem?.name;
+
+                            if (tag.tagName != null)
+                            {
+                                Log($"    Object-scoped tagline TagInfo name assigned for entity: {entity.name}, " +
+                                    $"animation: {anim.name}, timeline: {timeline.name}, " +
+                                    $"metadata.taglines[{keyIdx}].tags[{tagIdx}], (id: {tag.id}, tagId: {tag.tagId})");
+                                Log($"        tag name: {tag.tagName}");
+                            }
+                            else
+                            {
+                                Debug.LogWarning($"While processing the tag metadata (at index [${keyIdx}][{tagIdx}]) " +
+                                    $"for entity: '{entity.name}', animation: '{anim.name}', timeline: '{timeline.name}', " +
+                                    $" a tag definition for id: {tag.tagId} was missing from the tag definitions.");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private void AssignEventScopedMetadataReferences(ScmlObject scmlObject, Entity entity)
+        {
+            Log($"Entity '{entity.name}', assigning event-scoped metadata references for all events...");
+
+            foreach (var eventInfo in objectInfo.Values.Where(o => o.type == ObjectType.spriterEvent))
+            {
+                if (eventInfo.HasMetadata)
+                {
+                    DoAssignEventScopedMetadataReferences(scmlObject, entity, eventInfo);
+                }
+            }
+        }
+
+        private void DoAssignEventScopedMetadataReferences(ScmlObject scmlObject, Entity entity, SpriterInfoBase info)
+        {
+            // Call this only for event objInfos.  It will put the appropriate references in
+            // timeline.metadata.varlines[].varDef and timeline.metadata.taglineKeys[].tags[].tagName.
+
+            foreach (var anim in entity.animations)
+            {
+                foreach (var eventline in anim.eventlines)
+                {
+                    if (eventline == null || eventline.name != info.name || eventline.metadata == null)
+                    {
+                        continue;
+                    }
+
+                    for (int i = 0; i < eventline.metadata.varlines.Count; ++i)
+                    {
+                        var varline = eventline.metadata.varlines[i];
+
+                        varline.varDef = info.variableDefs.GetValueOrDefault(varline.varDefId);
+
+                        if (varline.varDef != null)
+                        {
+                            Log($"    Event-scoped varline varDef assigned for entity: {entity.name}, animation: {anim.name}, " +
+                                $"eventline: {eventline.name}, metadata.varlines[{i}], (id: {varline.id}, varDefId: {varline.varDefId})");
+                            Log($"        variable name: {varline.varDef.name}, type: {varline.varDef.type}, " +
+                                $"default value: '{varline.varDef.defaultValue}'");
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"While processing the variable metadata for entity: '{entity.name}', animation: '{anim.name}', " +
+                                $"eventline: '{eventline.name}', a variable definition for id: {varline.varDefId} was missing from the event-scoped variable definitions.");
+                        }
+                    }
+
+                    for (int keyIdx = 0; keyIdx < eventline.metadata.taglineKeys.Count; ++keyIdx)
+                    {
+                        var taglineKey = eventline.metadata.taglineKeys[keyIdx];
+
+                        for (int tagIdx = 0; tagIdx < taglineKey.tags.Count; ++tagIdx)
+                        {
+                            var tag = taglineKey.tags[tagIdx];
+
+                            var tagListItem = info.tagDefs.GetValueOrDefault(tag.tagId);
+                            tag.tagName = tagListItem?.name;
+
+                            if (tag.tagName != null)
+                            {
+                                Log($"    Event-scoped tagline TagInfo for entity: {entity.name}, animation: {anim.name}, " +
+                                    $"eventlinel: {eventline.name}, metadata.taglines[{keyIdx}].tags[{tagIdx}], (id: {tag.id}, tagId: {tag.tagId})");
+                                Log($"        tag name: {tag.tagName}");
+                            }
+                            else
+                            {
+                                Debug.LogWarning($"While processing the tag metadata for entity: '{entity.name}', animation: '{anim.name}', " +
+                                    $"eventline: '{eventline.name}', a tag definition for id: {tag.tagId} was missing from the tag definitions.");
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private void PreprocessBones(Entity entity)
@@ -666,10 +1105,7 @@ namespace Spriter2UnityDX.EntityInfo
             {
                 Log($"    '{boneName}'");
 
-                var newBoneInfo = new SpriterBoneInfo(boneName, ObjectType.bone);
-                PreprocessObjectMetadata(entity, newBoneInfo);
-
-                boneInfo.Add(boneName, newBoneInfo);
+                boneInfo.Add(boneName, new SpriterBoneInfo(boneName, ObjectType.bone));
             }
         }
 
@@ -690,10 +1126,7 @@ namespace Spriter2UnityDX.EntityInfo
             {
                 Log($"    '{spriteName}'");
 
-                var newSpriteInfo = new SpriterObjectInfo(spriteName, ObjectType.sprite);
-                PreprocessObjectMetadata(entity, newSpriteInfo);
-
-                objectInfo.Add(spriteName, newSpriteInfo);
+                objectInfo.Add(spriteName, new SpriterObjectInfo(spriteName, ObjectType.sprite));
             }
         }
 
@@ -716,10 +1149,7 @@ namespace Spriter2UnityDX.EntityInfo
                 {
                     Log($"    '{actionPointName}'");
 
-                    var newActionPtInfo = new SpriterObjectInfo(actionPointName, ObjectType.point);
-                    PreprocessObjectMetadata(entity, newActionPtInfo);
-
-                    objectInfo.Add(actionPointName, newActionPtInfo);
+                    objectInfo.Add(actionPointName, new SpriterObjectInfo(actionPointName, ObjectType.point));
                 }
             }
             else
@@ -747,10 +1177,7 @@ namespace Spriter2UnityDX.EntityInfo
                 {
                     Log($"    '{eventName}'");
 
-                    var newEventInfo = new SpriterObjectInfo(eventName, ObjectType.spriterEvent);
-                    PreprocessObjectMetadata(entity, newEventInfo);
-
-                    objectInfo.Add(eventName, newEventInfo);
+                    objectInfo.Add(eventName, new SpriterObjectInfo(eventName, ObjectType.spriterEvent));
                 }
             }
             else
@@ -759,7 +1186,7 @@ namespace Spriter2UnityDX.EntityInfo
             }
         }
 
-        private void PreprocessSounds(string spriterProjDirectory, ScmlObject scmlObj, Entity entity)
+        private void PreprocessSounds(string spriterProjDirectory, ScmlObject scmlObject, Entity entity)
         {
             // Validate and add to soundItems collection.
             var allSoundlineInfo =
@@ -785,7 +1212,7 @@ namespace Spriter2UnityDX.EntityInfo
                     // the file exists.
 
                     var fileItem =
-                        scmlObj.folders
+                        scmlObject.folders
                             .FirstOrDefault(f => f.id == soundObject.folder)?
                             .files
                             .FirstOrDefault(file => file.id == soundObject.file);

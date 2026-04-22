@@ -417,7 +417,7 @@ namespace Spriter2UnityDX.Prefabs
             }
             else if (metadataTransform != null)
             {   // If a metadata game object exists, remove it.
-                DestroyImmediate(metadataTransform);
+                DestroyImmediate(metadataTransform.gameObject);
             }
         }
 
@@ -449,7 +449,7 @@ namespace Spriter2UnityDX.Prefabs
             }
             else if (metadataTransform != null)
             {   // If a metadata game object exists, remove it.
-                DestroyImmediate(metadataTransform);
+                DestroyImmediate(metadataTransform.gameObject);
             }
         }
 
@@ -521,7 +521,7 @@ namespace Spriter2UnityDX.Prefabs
             else if (eventsTransform != null)
             {
                 // If an events game object exists, remove it.
-                DestroyImmediate(eventsTransform);
+                DestroyImmediate(eventsTransform.gameObject);
 
                 // If an EventController component exists on the parent (which is assumed to be the root) then remove it.
                 if (eventControllerComponent != null)

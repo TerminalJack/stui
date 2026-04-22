@@ -102,7 +102,8 @@ namespace Spriter2UnityDX.Importing
 
         [XmlAttribute("default")] public string defaultValue;
 
-        [XmlIgnore] public List<string> possibleStringValues = new List<string>(); // if type is String then this will be populated.
+        // If type is String then possibleStringValues will be populated during preprocessing by SpriterEntityInfo.
+        [XmlIgnore] public List<string> possibleStringValues = new List<string>();
     }
 
     public class Varline : ScmlElement
@@ -110,6 +111,8 @@ namespace Spriter2UnityDX.Importing
         [XmlAttribute] public string name { get; set; } // ? Used?
         [XmlAttribute("def")] public int varDefId; // Id of entry in corresponding collection of VarDefs.
         [XmlElement("key")] public List<VarlineKey> keys = new List<VarlineKey>();
+
+        [XmlIgnore] public VarDef varDef; // This will be assigned during preprocessing by SpriterEntityInfo.
     }
 
     public class SimpleKey : ScmlElement
@@ -159,6 +162,7 @@ namespace Spriter2UnityDX.Importing
     public class TagInfo : ScmlElement
     {
         [XmlAttribute("t")] public int tagId;
+        [XmlIgnore] public string tagName; // This will be assigned during preprocessing by SpriterEntityInfo.
     }
 
     public enum VarType
