@@ -438,6 +438,7 @@ If you are developing, maintaining, or troubleshooting Stui, then you may find t
 * BrashMonkey's Spriter [User Manual](https://www.brashmonkey.com/spriter_manual/index.htm)
 * BrashMonkey's Scml [Format Specification](https://www.brashmonkey.com/ScmlDocs/ScmlReference.html)
 * Online Scml (XML) Schema [Diagram Viewer](https://terminaljack.github.io/stui/ScmlSchemaViewer/scml_schema_viewer.html)  (Created from [this file](https://github.com/TerminalJack/stui/blob/master/docs/scml-schema-definition.xsd).)
+* Stui Spriter [Entity Relationship Diagram](https://terminaljack.github.io/stui/Stui%20ERD/Stui%20Spriter%20Entity%20Relationship%20Diagram.pdf)
 * Free and paid Spriter project files can be found [here](https://opengameart.org/art-search?keys=spriter), [here](https://craftpix.net/?s=spriter), and [here](https://www.gamedeveloperstudio.com/).
 
 ### Extra Logging
