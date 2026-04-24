@@ -69,7 +69,6 @@ namespace Stui.Animations
                 {
                     OriginalClips[clip.name] = clip;
                 }
-
             }
         }
 
@@ -185,6 +184,36 @@ namespace Stui.Animations
                     }
                 }
             }
+
+            if (buildCtx.IsCanceled) { yield break; }
+            yield return $"{buildCtx.MessagePrefix}, creating animation curves for entity-scoped tags";
+
+            AddEntityScopedTagsToClip(animation, clip);
+
+            if (buildCtx.IsCanceled) { yield break; }
+            yield return $"{buildCtx.MessagePrefix}, creating animation curves for entity-scoped variables";
+
+            AddEntityScopedVariablesToClip(animation, clip);
+
+            if (buildCtx.IsCanceled) { yield break; }
+            yield return $"{buildCtx.MessagePrefix}, creating animation curves for event-scoped tags";
+
+            AddEventScopedTagsToClip(animation, clip);
+
+            if (buildCtx.IsCanceled) { yield break; }
+            yield return $"{buildCtx.MessagePrefix}, creating animation curves for event-scoped variables";
+
+            AddEventScopedVariablesToClip(animation, clip);
+
+            if (buildCtx.IsCanceled) { yield break; }
+            yield return $"{buildCtx.MessagePrefix}, creating animation curves for object-scoped tags";
+
+            AddObjectScopedTagsToClip(animation, clip);
+
+            if (buildCtx.IsCanceled) { yield break; }
+            yield return $"{buildCtx.MessagePrefix}, creating animation curves for object-scoped variables";
+
+            AddObjectScopedVariablesToClip(animation, clip);
 
             if (buildCtx.IsCanceled) { yield break; }
             yield return $"{buildCtx.MessagePrefix}, configuring animation clip";
@@ -359,6 +388,150 @@ namespace Stui.Animations
 
                 AnimationUtility.SetAnimationEvents(clip, animEvents.ToArray());
             }
+        }
+
+        private void CreateTagCurve(AnimationCurve tagCurve, Animation animation, List<TaglineKey> taglineKeys, TagListItem tagDef)
+        {
+            List<AnimationCurve> allCurves = new List<AnimationCurve>();
+
+            var keys = taglineKeys.ToList();
+
+            // If a key for time 0 doesn't exist then create one.  (Tag will be inactive at time 0.)
+            if (keys[0].time_s != 0f)
+            {
+                keys.Insert(0, new TaglineKey() { time_s = 0f, tags = new List<TagInfo>() });
+            }
+
+            for (int i = 0; i < keys.Count; ++i)
+            {
+                var key = keys[i];
+
+                if (key.time_s >= animation.length)
+                {   // This key is on the last frame of the animation.  A key will have already been
+                    // created for it below.
+                    break;
+                }
+
+                float startTime = key.time_s;
+                float startValue = key.tags.Exists(t => t.tagId == tagDef.id) ? 1f : 0f;
+
+                // Skip any keys that have the same value as startValue.
+                int nextKeyIdx = i + 1;
+
+                for ( ; nextKeyIdx < keys.Count; ++nextKeyIdx)
+                {
+                    float nextKeyValue = keys[nextKeyIdx].tags.Exists(t => t.tagId == tagDef.id) ? 1f : 0f;
+                    if (nextKeyValue != startValue)
+                    {
+                        break;
+                    }
+                }
+
+                var nextKey = (nextKeyIdx < keys.Count) ? keys[nextKeyIdx] : null;
+
+                float endTime = nextKey != null ? nextKey.time_s : animation.length;
+
+                float endValue = nextKey != null
+                    ? nextKey.tags.Exists(t => t.tagId == tagDef.id) ? 1f : 0f
+                    : startValue;
+
+                allCurves.Add(CreateCurve(CurveType.instant, startTime, endTime, startValue, endValue));
+
+                i = nextKeyIdx - 1; // Account for any skipped keys.
+            }
+
+            CurveBuilder.ConcatenateCurvesInto(tagCurve, allCurves.ToArray());
+        }
+
+        private void CreateTagCurves(Animation animation, AnimationClip clip, List<TagInstanceInfo> tagInstanceInfos, Metadata metadata)
+        {
+            foreach (var tagInstanceInfo in tagInstanceInfos)
+            {
+                var tagDef = tagInstanceInfo.tagDef;
+
+                // Do we need to create an animation curve for this tag?  A curve will need to be created in either of
+                // the following cases:
+                //
+                //   1) The tag is used in this animation.  That is, it appears at least once in the tagline.
+                //   2) The tag's bind pose value is true.  (That is, the tag is active on the first frame of the first
+                //      animation.)  If this is the case then we need to override that and create a curve where it is
+                //      false (inactive) for the entire animation.
+
+                bool tagIsUsed = metadata?.taglineKeys?.SelectMany(k => k.tags).Any(t => t.tagId == tagDef.id) ?? false;
+                bool needCurve = tagInstanceInfo.bindPoseValue || tagIsUsed;
+
+                if (needCurve)
+                {
+                    AnimationCurve tagCurve = new AnimationCurve();
+
+                    if (tagIsUsed)
+                    {
+                        CreateTagCurve(tagCurve, animation, metadata.taglineKeys, tagDef);
+                    }
+                    else
+                    {
+                        tagCurve.AddKey(new Keyframe(0f, 0f)); // Value of 0 at time 0.
+                    }
+
+                    var spriterTagComponent = tagInstanceInfo.gameObject.GetComponent<SpriterTag>();
+                    var spriterTagTransform = spriterTagComponent.transform;
+                    var spriterTagTransformPath = GetPathToChild(spriterTagTransform);
+                    var spriterTagBinding = EditorCurveBinding.FloatCurve(spriterTagTransformPath,
+                        typeof(SpriterTag), nameof(SpriterTag.isActiveFloat));
+
+                    AnimationUtility.SetEditorCurve(clip, spriterTagBinding, tagCurve);
+                }
+            }
+        }
+
+        private void AddEntityScopedTagsToClip(Animation animation, AnimationClip clip)
+        {
+            CreateTagCurves(animation, clip, entityInfo.tagInstanceInfos.Values.ToList(), animation.metadata);
+        }
+
+        private void AddEntityScopedVariablesToClip(Animation animation, AnimationClip clip)
+        {
+            // ! Todo
+        }
+
+        private void AddEventScopedTagsToClip(Animation animation, AnimationClip clip)
+        {
+            var allEventInfosWithTags =
+                entityInfo.objectInfo.Values
+                .Where(i => i.type == ObjectType.spriterEvent && i.HasTags);
+
+            foreach (var eventline in animation.eventlines)
+            {
+                foreach (var info in allEventInfosWithTags)
+                {
+                    CreateTagCurves(animation, clip, info.tagInstanceInfos.Values.ToList(), eventline?.metadata);
+                }
+            }
+        }
+
+        private void AddEventScopedVariablesToClip(Animation animation, AnimationClip clip)
+        {
+            // ! Todo
+        }
+
+        private void AddObjectScopedTagsToClip(Animation animation, AnimationClip clip)
+        {
+            var allNonEventInfosWithTags =
+                entityInfo.boneInfo.Values.Cast<SpriterInfoBase>()
+                .Concat(entityInfo.objectInfo.Values)
+                .Where(i => i.type != ObjectType.spriterEvent && i.HasTags);
+
+            foreach (var info in allNonEventInfosWithTags)
+            {
+                var metadata = animation.timelines.FirstOrDefault(tl => tl.name == info.name && tl.objectType == info.type)?.metadata;
+
+                CreateTagCurves(animation, clip, info.tagInstanceInfos.Values.ToList(), metadata);
+            }
+        }
+
+        private void AddObjectScopedVariablesToClip(Animation animation, AnimationClip clip)
+        {
+            // ! Todo
         }
 
         private void SetCurves(Transform child, SpatialInfo defaultInfo, Timeline timeLine, AnimationClip clip, Animation animation)

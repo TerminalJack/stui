@@ -281,7 +281,7 @@ namespace Stui.Prefabs
             buildCtx.ImportedPrefabs.Add(prefabPath);
         }
 
-        private void BuildSpriterVariableTransforms(Transform metadataTransform, List<VarDef> variableDefs)
+        private void BuildSpriterVariableTransforms(Transform metadataTransform, List<VarInstanceInfo> varInstanceInfos)
         {
             // Build the variable transforms under the given metadata transform.
             //
@@ -291,8 +291,10 @@ namespace Stui.Prefabs
             //       └── varname2 (Int variable)
             //       └── varname3 (String variable)
 
-            foreach (var varDef in variableDefs)
+            foreach (var varInfo in varInstanceInfos)
             {
+                var varDef = varInfo.varDef;
+
                 var varTransformName = $"{varDef.name} ({varDef.type} variable)";
 
                 var varTransform = metadataTransform.Find(varTransformName);
@@ -302,6 +304,8 @@ namespace Stui.Prefabs
                 }
 
                 varTransform.SetParent(metadataTransform, worldPositionStays: false);
+
+                varInfo.gameObject = varTransform.gameObject;
 
                 // Remove any and all Spriter variable components that alread exist on this game object.  There
                 // should be at most one but the type may have changed between imports so remove all previous
@@ -363,7 +367,7 @@ namespace Stui.Prefabs
             }
         }
 
-        private void BuildSpriterTagTransforms(Transform metadataTransform, List<TagListItem> tagDefs)
+        private void BuildSpriterTagTransforms(Transform metadataTransform, List<TagInstanceInfo> tagInstanceInfos)
         {
             // Build the tag transforms under the given metadata transform.
             //
@@ -372,8 +376,10 @@ namespace Stui.Prefabs
             //       └── tagname1 (Tag)
             //       └── tagname2 (Tag)
 
-            foreach (var tagDef in tagDefs)
+            foreach (var tagInfo in tagInstanceInfos)
             {
+                var tagDef = tagInfo.tagDef;
+
                 var tagTransformName = $"{tagDef.name} (Tag)";
 
                 var tagTransform = metadataTransform.Find(tagTransformName);
@@ -383,6 +389,8 @@ namespace Stui.Prefabs
                 }
 
                 tagTransform.SetParent(metadataTransform, worldPositionStays: false);
+
+                tagInfo.gameObject = tagTransform.gameObject;
 
                 // Remove any preexisting tag component.
                 var tagComponent = tagTransform.gameObject.GetComponent<SpriterTag>();
@@ -423,9 +431,9 @@ namespace Stui.Prefabs
 
                 metadataTransform.SetParent(parentTransform, worldPositionStays: false);
 
-                BuildSpriterVariableTransforms(metadataTransform, entityInfo.variableDefs.Values.ToList());
+                BuildSpriterVariableTransforms(metadataTransform, entityInfo.varInstanceInfos.Values.ToList());
 
-                BuildSpriterTagTransforms(metadataTransform, entityInfo.tagDefs.Values.ToList());
+                BuildSpriterTagTransforms(metadataTransform, entityInfo.tagInstanceInfos.Values.ToList());
             }
             else if (metadataTransform != null)
             {   // If a metadata game object exists, remove it.
@@ -433,7 +441,7 @@ namespace Stui.Prefabs
             }
         }
 
-        private void ProcessObjectScopedMetadata(Transform parentTransform, SpriterEntityInfo.SpriterInfoBase objInfo)
+        private void ProcessObjectScopedMetadata(Transform parentTransform, SpriterInfoBase objInfo)
         {
             // If this object (aka timeline, which may also be an event) has any metadata then create the neccessary
             // hierarchy.  The hierarchy will look like the following:
@@ -458,10 +466,9 @@ namespace Stui.Prefabs
 
                 metadataTransform.SetParent(parentTransform, worldPositionStays: false);
 
-                BuildSpriterVariableTransforms(metadataTransform, objInfo.variableDefs.Values.ToList());
+                BuildSpriterVariableTransforms(metadataTransform, objInfo.varInstanceInfos.Values.ToList());
 
-                BuildSpriterTagTransforms(metadataTransform, objInfo.tagDefs.Values.ToList());
-
+                BuildSpriterTagTransforms(metadataTransform, objInfo.tagInstanceInfos.Values.ToList());
             }
             else if (metadataTransform != null)
             {   // If a metadata game object exists, remove it.
@@ -572,7 +579,7 @@ namespace Stui.Prefabs
         private void FinalizeVirtualParentProcessing(SpriterEntityInfo entityInfo, Dictionary<string, Transform> transforms)
         {
             // Add 'possible parents' to all of the virtual parent components.
-            foreach (var info in entityInfo.boneInfo.Values.Cast<SpriterEntityInfo.SpriterInfoBase>()
+            foreach (var info in entityInfo.boneInfo.Values.Cast<SpriterInfoBase>()
                 .Concat(entityInfo.objectInfo.Values))
             {
                 if (info.hasVirtualParent && info.virtualParentTransform != null)
@@ -756,7 +763,7 @@ namespace Stui.Prefabs
                 if (!transforms.ContainsKey(timeLine.name))
                 {   //We only need to go through this once, so ignore it if it's already in the dict
 
-                    SpriterEntityInfo.SpriterBoneInfo spriterBoneInfo;
+                    SpriterBoneInfo spriterBoneInfo;
                     entityInfo.boneInfo.TryGetValue(timeLine.name, out spriterBoneInfo);
 
                     if (spriterBoneInfo == null || spriterBoneInfo.type != ObjectType.bone)
@@ -812,7 +819,7 @@ namespace Stui.Prefabs
             {
                 var timeLine = timeLines[oref.timeline];
 
-                SpriterEntityInfo.SpriterObjectInfo spriterObjectInfo;
+                SpriterObjectInfo spriterObjectInfo;
                 entityInfo.objectInfo.TryGetValue(timeLine.name, out spriterObjectInfo);
 
                 if (spriterObjectInfo == null || spriterObjectInfo.type != ObjectType.sprite)
@@ -928,7 +935,7 @@ namespace Stui.Prefabs
             {
                 var timeLine = timeLines[oref.timeline];
 
-                SpriterEntityInfo.SpriterObjectInfo spriterObjectInfo;
+                SpriterObjectInfo spriterObjectInfo;
                 entityInfo.objectInfo.TryGetValue(timeLine.name, out spriterObjectInfo);
 
                 if (spriterObjectInfo == null || spriterObjectInfo.type != ObjectType.point)
@@ -972,7 +979,7 @@ namespace Stui.Prefabs
         }
 
         private void ProcessVirtualParent(string parentName, ref Transform parentTransform,
-            SpriterEntityInfo.SpriterInfoBase virtualParentInfo)
+            SpriterInfoBase virtualParentInfo)
         {
             // The hierarchy for a sprite will look like the following:
             //

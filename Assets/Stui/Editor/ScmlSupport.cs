@@ -108,7 +108,6 @@ namespace Stui.Importing
 
     public class Varline : ScmlElement
     {
-        [XmlAttribute] public string name { get; set; } // ? Used?
         [XmlAttribute("def")] public int varDefId; // Id of entry in corresponding collection of VarDefs.
         [XmlElement("key")] public List<VarlineKey> keys = new List<VarlineKey>();
 

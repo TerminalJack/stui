@@ -16,7 +16,7 @@ namespace Stui
 
         [Tooltip("Is this tag currently active?  This is the animated property.  Use the isActive property to get the " +
             "tag's state.")]
-        [SerializeField] private float isActiveFloat = 0f;
+        public float isActiveFloat = 0f;
 
         public bool isActive => isActiveFloat > 0.5f;
     }

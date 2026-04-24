@@ -16,62 +16,78 @@ namespace Stui.EntityInfo
     using UnityEditor;
     using Debug = UnityEngine.Debug;
 
+    public class VarInstanceInfo
+    {
+        public VarDef varDef;
+        public string bindPoseValue; // Value of this variable on the first frame of the first animation.
+        public GameObject gameObject; // Where the SpriterFloat, SpriterInt, or SpriterString component can be found.
+    }
+
+    public class TagInstanceInfo
+    {
+        public TagListItem tagDef;
+        public bool bindPoseValue; // Value of this tag on the first frame of the first animation.
+        public GameObject gameObject; // Where the SpriterTag component can be found.
+    }
+
+    // Information common to sprites, bones, and action points.  Events store their metadata here.
+    public abstract class SpriterInfoBase
+    {
+        public string name;
+        public ObjectType type;
+
+        public bool hasVirtualParent;
+        public string virtualParentTransformName; // Set even if there isn't one so ones from prior imports can be found.
+        public Transform virtualParentTransform; // The transform where the VirtualParent component is.
+
+        public List<string> parentBoneNames = new List<string>(); // Empty if there aren't any.
+
+        // This is the object-scoped and event-scoped metadata.  The key for these is the id.
+        public Dictionary<int, VarInstanceInfo> varInstanceInfos = new Dictionary<int, VarInstanceInfo>(); // Empty if there aren't any variables for this object.
+        public Dictionary<int, TagInstanceInfo> tagInstanceInfos = new Dictionary<int, TagInstanceInfo>(); // Empty if there aren't any tags for this object.
+
+        public bool HasMetadata { get { return HasVariables || HasTags;  } }
+        public bool HasVariables { get { return varInstanceInfos.Count > 0;  } }
+        public bool HasTags { get { return tagInstanceInfos.Count > 0; } }
+
+        public SpriterInfoBase(string _name, ObjectType _type)
+        {
+            name = _name;
+            type = _type;
+
+            virtualParentTransformName = _name + " virtual parent";
+        }
+    }
+
+    public class SpriterObjectInfo : SpriterInfoBase
+    {
+        public string spriteRenderTransformName;
+        public bool hasPivotController;
+        public string pivotControllerTransformName; // Set even if there isn't one so ones from prior imports can be found.
+
+        public SpriterObjectInfo(string _name, ObjectType _type)
+            : base(_name, _type)
+        {
+            spriteRenderTransformName = _name; // This will change if there is a pivot parent.
+            pivotControllerTransformName = _name;
+        }
+    }
+
+    public class SpriterBoneInfo : SpriterInfoBase
+    {
+        public SpriterBoneInfo(string _name, ObjectType _type)
+            : base(_name, _type)
+        {
+        }
+    }
+
     // This class is used for tracking information that spans across all of an entity's animations.
     // It also validates and preprocesses an entity's Spriter file information before the builders work with the entity.
+    // Additionally, it will optionally log a ton of potentially useful information should you need to debug a .scml
+    // file's contents.
 
     public class SpriterEntityInfo
     {
-        // Information common to sprites, bones, and action points.  Events store their metadata here.
-        public abstract class SpriterInfoBase
-        {
-            public string name;
-            public ObjectType type;
-
-            public bool hasVirtualParent;
-            public string virtualParentTransformName; // Set even if there isn't one so ones from prior imports can be found.
-            public Transform virtualParentTransform; // The transform where the VirtualParent component is.
-
-            public List<string> parentBoneNames = new List<string>(); // Empty if there aren't any.
-
-            // This is the object-scoped and event-scoped metadata.  The key for these is the id.
-            public Dictionary<int, VarDef> variableDefs = new Dictionary<int, VarDef>(); // Empty if there aren't any variables for this object.
-            public Dictionary<int, TagListItem> tagDefs = new Dictionary<int, TagListItem>(); // Empty if there aren't any tags for this object.
-
-            public bool HasMetadata { get { return HasVariables || HasTags;  } }
-            public bool HasVariables { get { return variableDefs.Count > 0;  } }
-            public bool HasTags { get { return tagDefs.Count > 0; } }
-
-            public SpriterInfoBase(string _name, ObjectType _type)
-            {
-                name = _name;
-                type = _type;
-
-                virtualParentTransformName = _name + " virtual parent";
-            }
-        }
-
-        public class SpriterObjectInfo : SpriterInfoBase
-        {
-            public string spriteRenderTransformName;
-            public bool hasPivotController;
-            public string pivotControllerTransformName; // Set even if there isn't one so ones from prior imports can be found.
-
-            public SpriterObjectInfo(string _name, ObjectType _type)
-                : base(_name, _type)
-            {
-                spriteRenderTransformName = _name; // This will change if there is a pivot parent.
-                pivotControllerTransformName = _name;
-            }
-        }
-
-        public class SpriterBoneInfo : SpriterInfoBase
-        {
-            public SpriterBoneInfo(string _name, ObjectType _type)
-                : base(_name, _type)
-            {
-            }
-        }
-
         // Note!: Bones and objects can have the same name in older Spriter projects so don't try to mix these into one collection.
         public Dictionary<string, SpriterObjectInfo> objectInfo = new Dictionary<string, SpriterObjectInfo>();
         public Dictionary<string, SpriterBoneInfo> boneInfo = new Dictionary<string, SpriterBoneInfo>();
@@ -80,13 +96,13 @@ namespace Stui.EntityInfo
 
         public List<SpriterSoundItem> soundItems = new List<SpriterSoundItem>();
 
-        // This is the entity-scoped metadata.  The key for these is the id.
-        public Dictionary<int, VarDef> variableDefs = new Dictionary<int, VarDef>(); // Empty if there aren't any entity-scoped variables.
-        public Dictionary<int, TagListItem> tagDefs = new Dictionary<int, TagListItem>(); // Empty if there aren't any entity-scoped tags.
+        // This is the entity-scoped metadata.  The key for these is either VarDef.id or TagListItem.id.
+        public Dictionary<int, VarInstanceInfo> varInstanceInfos = new Dictionary<int, VarInstanceInfo>(); // Empty if there aren't any variables for this object.
+        public Dictionary<int, TagInstanceInfo> tagInstanceInfos = new Dictionary<int, TagInstanceInfo>(); // Empty if there aren't any tags for this object.
 
         public bool HasMetadata { get { return HasVariables || HasTags;  } }
-        public bool HasVariables { get { return variableDefs.Count > 0;  } }
-        public bool HasTags { get { return tagDefs.Count > 0; } }
+        public bool HasVariables { get { return varInstanceInfos.Count > 0;  } }
+        public bool HasTags { get { return tagInstanceInfos.Count > 0; } }
 
         private string _entityName;
 
@@ -594,7 +610,24 @@ namespace Stui.EntityInfo
                         }
                     }
 
-                    variableDefs.Add(variableDef.id, variableDef);
+                    // Figure out the variable's bind pose value...
+                    var firstKeyFromFirstAnim = entity.animations
+                        .ElementAtOrDefault(0)?
+                        .metadata?
+                        .varlines?.FirstOrDefault(vl => vl.varDefId == variableDef.id)?
+                        .keys?.ElementAtOrDefault(0);
+
+                    var firstKeyTime = firstKeyFromFirstAnim?.time_s;
+                    var firstKeyValue = firstKeyFromFirstAnim?.value;
+
+                    string bindPoseValue = firstKeyTime != null && firstKeyTime == 0f ? firstKeyValue : variableDef.defaultValue;
+                    var newVarInstanceInfo = new VarInstanceInfo()
+                    {
+                        varDef = variableDef,
+                        bindPoseValue = bindPoseValue
+                    };
+
+                    varInstanceInfos.Add(variableDef.id, newVarInstanceInfo);
                 }
             }
             else
@@ -624,7 +657,24 @@ namespace Stui.EntityInfo
                     if (tagDef != null)
                     {
                         Log($"    tag id: {tagDef.id}, tag name: {tagDef.name}");
-                        tagDefs.Add(tagDef.id, tagDef);
+
+                        // Figure out the tag's bind pose value...
+                        var firstKeyFromFirstAnim =
+                            entity.animations.ElementAtOrDefault(0)?
+                            .metadata?
+                            .taglineKeys?.ElementAtOrDefault(0);
+
+                        bool bindPoseValue = (firstKeyFromFirstAnim?.time_s is 0f)
+                            ? firstKeyFromFirstAnim.tags.Exists(t => t.tagId == tagId)
+                            : false;
+
+                        var newTagInstanceInfo = new TagInstanceInfo()
+                        {
+                            tagDef = tagDef,
+                            bindPoseValue = bindPoseValue
+                        };
+
+                        tagInstanceInfos.Add(tagDef.id, newTagInstanceInfo);
                     }
                     else
                     {
@@ -655,14 +705,15 @@ namespace Stui.EntityInfo
                 {
                     var varline = anim.metadata.varlines[i];
 
-                    varline.varDef = variableDefs.GetValueOrDefault(varline.varDefId);
+                    var varInstanceInfo = varInstanceInfos.GetValueOrDefault(varline.varDefId);
+                    varline.varDef = varInstanceInfo?.varDef;
 
                     if (varline.varDef != null)
                     {
                         Log($"Entity-scoped varline varDef assigned for entity: {entity.name}, animation: {anim.name}, " +
                             $"metadata.varlines[{i}], (id: {varline.id}, varDefId: {varline.varDefId})");
                         Log($"    variable name: {varline.varDef.name}, type: {varline.varDef.type}, " +
-                            $"default value: '{varline.varDef.defaultValue}'");
+                            $"default value: '{varline.varDef.defaultValue}', bind pose value: '{varInstanceInfo.bindPoseValue}'");
                     }
                     else
                     {
@@ -680,15 +731,15 @@ namespace Stui.EntityInfo
                     {
                         var tag = taglineKey.tags[tagIdx];
 
-                        var tagListItem = tagDefs.GetValueOrDefault(tag.tagId);
-                        tag.tagName = tagListItem?.name;
+                        var tagInstanceInfo = tagInstanceInfos.GetValueOrDefault(tag.tagId);
+                        tag.tagName = tagInstanceInfo?.tagDef?.name;
 
                         if (tag.tagName != null)
                         {
                             Log($"Entity-scoped tagline TagInfo name assigned for entity: {entity.name}, " +
                                 $"animation: {anim.name}, metadata.taglines[{keyIdx}].tags[{tagIdx}], (id: {tag.id}, " +
                                 $"tagId: {tag.tagId})");
-                            Log($"    tag name: {tag.tagName}");
+                            Log($"    tag name: {tag.tagName}, bind pose value: {tagInstanceInfo.bindPoseValue}");
                         }
                         else
                         {
@@ -776,7 +827,25 @@ namespace Stui.EntityInfo
                         }
                     }
 
-                    info.variableDefs.Add(variableDef.id, variableDef);
+                    // Figure out the variable's bind pose value...
+                    var firstKeyFromFirstAnim = entity.animations
+                        .ElementAtOrDefault(0)?
+                        .timelines.FirstOrDefault(tl => tl.name == info.name && tl.objectType == info.type)?
+                        .metadata?
+                        .varlines?.FirstOrDefault(vl => vl.varDefId == variableDef.id)?
+                        .keys?.ElementAtOrDefault(0);
+
+                    var firstKeyTime = firstKeyFromFirstAnim?.time_s;
+                    var firstKeyValue = firstKeyFromFirstAnim?.value;
+
+                    string bindPoseValue = firstKeyTime != null && firstKeyTime == 0f ? firstKeyValue : variableDef.defaultValue;
+                    var newVarInstanceInfo = new VarInstanceInfo()
+                    {
+                        varDef = variableDef,
+                        bindPoseValue = bindPoseValue
+                    };
+
+                    info.varInstanceInfos.Add(variableDef.id, newVarInstanceInfo);
                 }
             }
 
@@ -803,7 +872,25 @@ namespace Stui.EntityInfo
                     if (tagDef != null)
                     {
                         Log($"        tag id: {tagDef.id}, tag name: {tagDef.name}");
-                        info.tagDefs.Add(tagDef.id, tagDef);
+
+                        // Figure out the tag's bind pose value...
+                        var firstKeyFromFirstAnim = entity.animations
+                            .ElementAtOrDefault(0)?
+                            .timelines.FirstOrDefault(tl => tl.name == info.name && tl.objectType == info.type)?
+                            .metadata?
+                            .taglineKeys?.ElementAtOrDefault(0);
+
+                        bool bindPoseValue = (firstKeyFromFirstAnim?.time_s is 0f)
+                            ? firstKeyFromFirstAnim.tags.Exists(t => t.tagId == tagId)
+                            : false;
+
+                        var newTagInstanceInfo = new TagInstanceInfo()
+                        {
+                            tagDef = tagDef,
+                            bindPoseValue = bindPoseValue
+                        };
+
+                        info.tagInstanceInfos.Add(tagDef.id, newTagInstanceInfo);
                     }
                     else
                     {
@@ -876,7 +963,25 @@ namespace Stui.EntityInfo
                         }
                     }
 
-                    info.variableDefs.Add(variableDef.id, variableDef);
+                    // Figure out the variable's bind pose value...
+                    var firstKeyFromFirstAnim = entity.animations
+                        .ElementAtOrDefault(0)?
+                        .eventlines.FirstOrDefault(el => el.name == info.name)?
+                        .metadata?
+                        .varlines?.FirstOrDefault(vl => vl.varDefId == variableDef.id)?
+                        .keys?.ElementAtOrDefault(0);
+
+                    var firstKeyTime = firstKeyFromFirstAnim?.time_s;
+                    var firstKeyValue = firstKeyFromFirstAnim?.value;
+
+                    string bindPoseValue = firstKeyTime != null && firstKeyTime == 0f ? firstKeyValue : variableDef.defaultValue;
+                    var newVarInstanceInfo = new VarInstanceInfo()
+                    {
+                        varDef = variableDef,
+                        bindPoseValue = bindPoseValue
+                    };
+
+                    info.varInstanceInfos.Add(variableDef.id, newVarInstanceInfo);
                 }
             }
 
@@ -903,7 +1008,25 @@ namespace Stui.EntityInfo
                     if (tagDef != null)
                     {
                         Log($"        tag id: {tagDef.id}, tag name: {tagDef.name}");
-                        info.tagDefs.Add(tagDef.id, tagDef);
+
+                        // Figure out the tag's bind pose value...
+                        var firstKeyFromFirstAnim = entity.animations
+                            .ElementAtOrDefault(0)?
+                            .eventlines.FirstOrDefault(el => el.name == info.name)?
+                            .metadata?
+                            .taglineKeys?.ElementAtOrDefault(0);
+
+                        bool bindPoseValue = (firstKeyFromFirstAnim?.time_s is 0f)
+                            ? firstKeyFromFirstAnim.tags.Exists(t => t.tagId == tagId)
+                            : false;
+
+                        var newTagInstanceInfo = new TagInstanceInfo()
+                        {
+                            tagDef = tagDef,
+                            bindPoseValue = bindPoseValue
+                        };
+
+                        info.tagInstanceInfos.Add(tagDef.id, newTagInstanceInfo);
                     }
                     else
                     {
@@ -966,14 +1089,15 @@ namespace Stui.EntityInfo
                     {
                         var varline = timeline.metadata.varlines[i];
 
-                        varline.varDef = info.variableDefs.GetValueOrDefault(varline.varDefId);
+                        var varInstanceInfo = info.varInstanceInfos.GetValueOrDefault(varline.varDefId);
+                        varline.varDef = varInstanceInfo?.varDef;
 
                         if (varline.varDef != null)
                         {
                             Log($"    Object-scoped varline varDef assigned for entity: {entity.name}, animation: {anim.name}, " +
                                 $"timeline: {timeline.name}, metadata.varlines[{i}], (id: {varline.id}, varDefId: {varline.varDefId})");
                             Log($"        variable name: {varline.varDef.name}, type: {varline.varDef.type}, " +
-                                $"default value: '{varline.varDef.defaultValue}'");
+                                $"default value: '{varline.varDef.defaultValue}', bind pose value: '{varInstanceInfo.bindPoseValue}'");
                         }
                         else
                         {
@@ -991,15 +1115,15 @@ namespace Stui.EntityInfo
                         {
                             var tag = taglineKey.tags[tagIdx];
 
-                            var tagListItem = info.tagDefs.GetValueOrDefault(tag.tagId);
-                            tag.tagName = tagListItem?.name;
+                            var tagInstanceInfo = info.tagInstanceInfos.GetValueOrDefault(tag.tagId);
+                            tag.tagName = tagInstanceInfo?.tagDef?.name;
 
                             if (tag.tagName != null)
                             {
                                 Log($"    Object-scoped tagline TagInfo name assigned for entity: {entity.name}, " +
                                     $"animation: {anim.name}, timeline: {timeline.name}, " +
                                     $"metadata.taglines[{keyIdx}].tags[{tagIdx}], (id: {tag.id}, tagId: {tag.tagId})");
-                                Log($"        tag name: {tag.tagName}");
+                                Log($"        tag name: {tag.tagName}, bind pose value: {tagInstanceInfo.bindPoseValue}");
                             }
                             else
                             {
@@ -1044,14 +1168,15 @@ namespace Stui.EntityInfo
                     {
                         var varline = eventline.metadata.varlines[i];
 
-                        varline.varDef = info.variableDefs.GetValueOrDefault(varline.varDefId);
+                        var varInstanceInfo = info.varInstanceInfos.GetValueOrDefault(varline.varDefId);
+                        varline.varDef = varInstanceInfo?.varDef;
 
                         if (varline.varDef != null)
                         {
                             Log($"    Event-scoped varline varDef assigned for entity: {entity.name}, animation: {anim.name}, " +
                                 $"eventline: {eventline.name}, metadata.varlines[{i}], (id: {varline.id}, varDefId: {varline.varDefId})");
                             Log($"        variable name: {varline.varDef.name}, type: {varline.varDef.type}, " +
-                                $"default value: '{varline.varDef.defaultValue}'");
+                                $"default value: '{varline.varDef.defaultValue}', bind pose value: '{varInstanceInfo.bindPoseValue}'");
                         }
                         else
                         {
@@ -1068,14 +1193,14 @@ namespace Stui.EntityInfo
                         {
                             var tag = taglineKey.tags[tagIdx];
 
-                            var tagListItem = info.tagDefs.GetValueOrDefault(tag.tagId);
-                            tag.tagName = tagListItem?.name;
+                            var tagInstanceInfo = info.tagInstanceInfos.GetValueOrDefault(tag.tagId);
+                            tag.tagName = tagInstanceInfo?.tagDef?.name;
 
                             if (tag.tagName != null)
                             {
                                 Log($"    Event-scoped tagline TagInfo for entity: {entity.name}, animation: {anim.name}, " +
                                     $"eventlinel: {eventline.name}, metadata.taglines[{keyIdx}].tags[{tagIdx}], (id: {tag.id}, tagId: {tag.tagId})");
-                                Log($"        tag name: {tag.tagName}");
+                                Log($"        tag name: {tag.tagName}, bind pose value: {tagInstanceInfo.bindPoseValue}");
                             }
                             else
                             {
