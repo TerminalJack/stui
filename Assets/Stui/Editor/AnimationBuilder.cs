@@ -484,6 +484,147 @@ namespace Stui.Animations
             }
         }
 
+        private float GetSpriterVariableValueAsFloat(VarDef varDef, string valueAsString)
+        {
+            float result = 0f;
+
+            switch (varDef.type)
+            {
+                case VarType.Float:
+                    result = float.TryParse(valueAsString, out var f) ? f : 0f;
+                    break;
+
+                case VarType.Int:
+                    result = int.TryParse(valueAsString, out var i) ? i : 0;
+                    break;
+
+                case VarType.String:
+                    result = varDef.possibleStringValues.FindIndex(s => s == valueAsString) is var idx && idx >= 0 ? idx : 0;
+                    break;
+
+                default:
+                    break;
+            }
+
+            return result;
+        }
+
+        private void CreateVariableCurve(AnimationCurve varCurve, Animation animation, List<VarlineKey> varlineKeys, VarDef varDef)
+        {
+            List<AnimationCurve> allCurves = new List<AnimationCurve>();
+
+            var keys = varlineKeys.ToList();
+
+            // If a key for time 0 doesn't exist then create one.  (Variable will have its default value.)
+            if (keys[0].time_s != 0f)
+            {
+                keys.Insert(0, new VarlineKey() { time_s = 0f, curve_type = CurveType.instant, value = varDef.defaultValue });
+            }
+
+            for (int i = 0; i < keys.Count; ++i)
+            {
+                var key = keys[i];
+
+                if (key.time_s >= animation.length)
+                {   // This key is on the last frame of the animation.  A key will have already been
+                    // created for it below.
+                    break;
+                }
+
+                float startTime = key.time_s;
+                float startValue = GetSpriterVariableValueAsFloat(varDef, key.value);
+
+                var nextKey = (i + 1 < keys.Count) ? keys[i + 1] : null;
+
+                float endTime = nextKey != null ? nextKey.time_s : animation.length;
+
+                float endValue = nextKey != null
+                    ? GetSpriterVariableValueAsFloat(varDef, nextKey.value)
+                    : startValue;
+
+                CurveType curve_type = varDef.type == VarType.String
+                    ? CurveType.instant
+                    : key.curve_type;
+
+                allCurves.Add(CreateCurve(curve_type, startTime, endTime, startValue, endValue, key.c1, key.c2, key.c3, key.c4));
+            }
+
+            CurveBuilder.ConcatenateCurvesInto(varCurve, allCurves.ToArray());
+        }
+
+        private EditorCurveBinding GetSpriterVarComponentBinding<T>(GameObject gameObject, string propertyName) where T : MonoBehaviour
+        {
+            var spriterVarComponent = gameObject.GetComponent<T>();
+            var spriterVarTransform = spriterVarComponent.transform;
+            var spriterVarTransformPath = GetPathToChild(spriterVarTransform);
+
+            var spriterVarBinding = EditorCurveBinding.FloatCurve(spriterVarTransformPath, typeof(T), propertyName);
+
+            return spriterVarBinding;
+        }
+
+        private void CreateVariableCurves(Animation animation, AnimationClip clip, List<VarInstanceInfo> varInstanceInfos, Metadata metadata)
+        {
+            foreach (var varInstanceInfo in varInstanceInfos)
+            {
+                var varDef = varInstanceInfo.varDef;
+
+                // Do we need to create an animation curve for this variable?  A curve will need to be created in either
+                // of the following cases:
+                //
+                //   1) The variable is used in this animation.  That is, it has a varline.
+                //   2) The variable's bind pose value is different than the variable's default value.  If this is the
+                //      case then we need to override Unity's bind pose behavior and create a curve where the variabl is
+                //      has its default value for the entire animation.
+
+                var varline = metadata?.varlines.FirstOrDefault(vl => vl.varDefId == varDef.id);
+                bool needCurve = varline != null || varInstanceInfo.bindPoseValue != varDef.defaultValue;
+
+                if (needCurve)
+                {
+                    AnimationCurve varCurve = new AnimationCurve();
+
+                    if (varline != null)
+                    {
+                        CreateVariableCurve(varCurve, animation, varline.keys, varDef);
+                    }
+                    else
+                    {
+                        var varValueAsFloat = GetSpriterVariableValueAsFloat(varDef, varDef.defaultValue);
+                        varCurve.AddKey(new Keyframe(0f, varValueAsFloat)); // Variable's default value at time 0.
+                    }
+
+                    EditorCurveBinding varComponentBinding = new EditorCurveBinding();
+
+                    switch (varDef.type)
+                    {
+                        case VarType.Float:
+                            varComponentBinding = GetSpriterVarComponentBinding<SpriterFloat>(
+                                varInstanceInfo.gameObject,
+                                nameof(SpriterFloat.value));
+                            break;
+
+                        case VarType.Int:
+                            varComponentBinding = GetSpriterVarComponentBinding<SpriterInt>(
+                                varInstanceInfo.gameObject,
+                                nameof(SpriterInt.valueAsFloat));
+                            break;
+
+                        case VarType.String:
+                            varComponentBinding = GetSpriterVarComponentBinding<SpriterString>(
+                                varInstanceInfo.gameObject,
+                                nameof(SpriterString.valueIndex));
+                            break;
+
+                        default:
+                            break;
+                    }
+
+                    AnimationUtility.SetEditorCurve(clip, varComponentBinding, varCurve);
+                }
+            }
+        }
+
         private void AddEntityScopedTagsToClip(Animation animation, AnimationClip clip)
         {
             CreateTagCurves(animation, clip, entityInfo.tagInstanceInfos.Values.ToList(), animation.metadata);
@@ -491,7 +632,7 @@ namespace Stui.Animations
 
         private void AddEntityScopedVariablesToClip(Animation animation, AnimationClip clip)
         {
-            // ! Todo
+            CreateVariableCurves(animation, clip, entityInfo.varInstanceInfos.Values.ToList(), animation.metadata);
         }
 
         private void AddEventScopedTagsToClip(Animation animation, AnimationClip clip)
@@ -500,18 +641,26 @@ namespace Stui.Animations
                 entityInfo.objectInfo.Values
                 .Where(i => i.type == ObjectType.spriterEvent && i.HasTags);
 
-            foreach (var eventline in animation.eventlines)
-            {
                 foreach (var info in allEventInfosWithTags)
                 {
-                    CreateTagCurves(animation, clip, info.tagInstanceInfos.Values.ToList(), eventline?.metadata);
+                    var metadata = animation.eventlines?.FirstOrDefault(el => el.name == info.name)?.metadata;
+
+                    CreateTagCurves(animation, clip, info.tagInstanceInfos.Values.ToList(), metadata);
                 }
-            }
         }
 
         private void AddEventScopedVariablesToClip(Animation animation, AnimationClip clip)
         {
-            // ! Todo
+            var allEventInfosWithVars =
+                entityInfo.objectInfo.Values
+                .Where(i => i.type == ObjectType.spriterEvent && i.HasVariables);
+
+            foreach (var info in allEventInfosWithVars)
+            {
+                var metadata = animation.eventlines?.FirstOrDefault(el => el.name == info.name)?.metadata;
+
+                CreateVariableCurves(animation, clip, info.varInstanceInfos.Values.ToList(), metadata);
+            }
         }
 
         private void AddObjectScopedTagsToClip(Animation animation, AnimationClip clip)
@@ -531,7 +680,17 @@ namespace Stui.Animations
 
         private void AddObjectScopedVariablesToClip(Animation animation, AnimationClip clip)
         {
-            // ! Todo
+            var allNonEventInfosWithVars =
+                entityInfo.boneInfo.Values.Cast<SpriterInfoBase>()
+                .Concat(entityInfo.objectInfo.Values)
+                .Where(i => i.type != ObjectType.spriterEvent && i.HasVariables);
+
+            foreach (var info in allNonEventInfosWithVars)
+            {
+                var metadata = animation.timelines.FirstOrDefault(tl => tl.name == info.name && tl.objectType == info.type)?.metadata;
+
+                CreateVariableCurves(animation, clip, info.varInstanceInfos.Values.ToList(), metadata);
+            }
         }
 
         private void SetCurves(Transform child, SpatialInfo defaultInfo, Timeline timeLine, AnimationClip clip, Animation animation)
