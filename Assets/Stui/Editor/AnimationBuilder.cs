@@ -477,7 +477,7 @@ namespace Stui.Animations
                     var spriterTagTransform = spriterTagComponent.transform;
                     var spriterTagTransformPath = GetPathToChild(spriterTagTransform);
                     var spriterTagBinding = EditorCurveBinding.FloatCurve(spriterTagTransformPath,
-                        typeof(SpriterTag), nameof(SpriterTag.isActiveFloat));
+                        typeof(SpriterTag), nameof(SpriterTag.IsActive));
 
                     AnimationUtility.SetEditorCurve(clip, spriterTagBinding, tagCurve);
                 }
@@ -520,6 +520,9 @@ namespace Stui.Animations
             {
                 keys.Insert(0, new VarlineKey() { time_s = 0f, curve_type = CurveType.instant, value = varDef.defaultValue });
             }
+
+            // ! If the variable type is int then adjust the key timing so that the curve matches Spriter's.  Spriter
+            // ! does truncation whereas Unity does rounding when converting from float to int.
 
             for (int i = 0; i < keys.Count; ++i)
             {
@@ -601,19 +604,19 @@ namespace Stui.Animations
                         case VarType.Float:
                             varComponentBinding = GetSpriterVarComponentBinding<SpriterFloat>(
                                 varInstanceInfo.gameObject,
-                                nameof(SpriterFloat.value));
+                                nameof(SpriterFloat.Value));
                             break;
 
                         case VarType.Int:
                             varComponentBinding = GetSpriterVarComponentBinding<SpriterInt>(
                                 varInstanceInfo.gameObject,
-                                nameof(SpriterInt.valueAsFloat));
+                                nameof(SpriterInt.Value));
                             break;
 
                         case VarType.String:
                             varComponentBinding = GetSpriterVarComponentBinding<SpriterString>(
                                 varInstanceInfo.gameObject,
-                                nameof(SpriterString.valueIndex));
+                                nameof(SpriterString.ValueIndex));
                             break;
 
                         default:

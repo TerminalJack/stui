@@ -334,31 +334,31 @@ namespace Stui.Prefabs
                 {
                     case VarType.Float:
                         var floatVarComponent = varTransform.gameObject.AddComponent<SpriterFloat>();
-                        floatVarComponent.variableName = varDef.name;
-                        if (!float.TryParse(varDef.defaultValue, out floatVarComponent.defaultValue))
+                        floatVarComponent.VariableName = varDef.name;
+                        if (!float.TryParse(varDef.defaultValue, out floatVarComponent.DefaultValue))
                         {
-                            floatVarComponent.defaultValue = 0f;
+                            floatVarComponent.DefaultValue = 0f;
                         }
 
-                        floatVarComponent.value = floatVarComponent.defaultValue;
+                        floatVarComponent.Value = floatVarComponent.DefaultValue;
                         break;
 
                     case VarType.Int:
                         var intVarComponent = varTransform.gameObject.AddComponent<SpriterInt>();
-                        intVarComponent.variableName = varDef.name;
-                        if (!int.TryParse(varDef.defaultValue, out intVarComponent.defaultValue))
+                        intVarComponent.VariableName = varDef.name;
+                        if (!int.TryParse(varDef.defaultValue, out intVarComponent.DefaultValue))
                         {
-                            intVarComponent.defaultValue = -1;
+                            intVarComponent.DefaultValue = -1;
                         }
 
-                        intVarComponent.valueAsFloat = (float)intVarComponent.defaultValue;
+                        intVarComponent.Value = intVarComponent.DefaultValue;
                         break;
 
                     case VarType.String:
                         var stringVarComponent = varTransform.gameObject.AddComponent<SpriterString>();
-                        stringVarComponent.variableName = varDef.name;
-                        stringVarComponent.possibleValues = varDef.possibleStringValues.ToList();
-                        stringVarComponent.valueIndex = stringVarComponent.possibleValues.Count > 0 ? 0 : -1;
+                        stringVarComponent.VariableName = varDef.name;
+                        stringVarComponent.PossibleValues = varDef.possibleStringValues.ToList();
+                        stringVarComponent.ValueIndex = stringVarComponent.PossibleValues.Count > 0 ? 0 : -1;
                         break;
 
                     default:
@@ -402,7 +402,7 @@ namespace Stui.Prefabs
                 // Create tag component.
                 tagComponent = tagTransform.gameObject.AddComponent<SpriterTag>();
 
-                tagComponent.tagName = tagDef.name;
+                tagComponent.TagName = tagDef.name;
             }
         }
 
