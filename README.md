@@ -104,23 +104,19 @@ The importer currently supports the following Spriter features:
 * **Action points.**  Spriter action points will be imported as transforms.  They can be moved, rotated, and reparented.  They are useful for specifying "spawn points" (the location and rotation) of game objects, such as projectiles.
 * **Sounds effects.**  Spriter allows for sounds effects (`.wav` files) to play at specific points during an animation.  The importer will create animation events for each of the sound effects and there is a component provided (`Sound Controller`) that will handle the details of playing the sounds.  Note that sound effects will play only when your game is in play mode.  The sound effects will not play in-editor due to limitations in Unity.  Stay tuned for more information regarding this feature.
 * **Event triggers.**  Events are user-defined actions (that is, your code) that run at a specific point in time during an animation.  These are imported as Unity animation events.  You can subscribe to these events either at design time via the inspector and/or you can subscribe to them at runtime via an API.  Stay tuned for more information regarding this feature.
-* **Variables**  Spriter allows the animator to create animation curves for arbitrary, non-visual data.  These animation curves can then be used at runtime by the game designer for information that needs to be in-sync with the animations.  All of Spriter's variable types are supported by Stui: `float`s, `int`s and `string`s.  Stay tuned for more information regarding this feature.
-* **Tags** Spriter tags are a simple way of indicating that the entity is, or is not, in particular state.  Spriter allows you to define as many tags as you need.  A tag is either active or not and this can be determined at runtime by the game designer.  Stay tuned for more information regarding this feature.
+* **Variables.**  Spriter allows the animator to create animation curves for arbitrary, non-visual data.  These animation curves can then be used at runtime by the game designer for information that needs to be in-sync with the animations.  All of Spriter's variable types are supported by Stui: `float`s, `int`s and `string`s.  Stay tuned for more information regarding this feature.
+* **Tags.** Spriter tags are a simple way of indicating that the entity is, or is not, in particular state.  Spriter allows you to define as many tags as you need.  A tag is either active or not and this can be determined at runtime by the game designer.  Stay tuned for more information regarding this feature.
 
 ## Unsupported Spriter Features.
 
 The following Spriter features are not supported at this time:
 
-* Collision rectangles
-* SCON files (an alternative to SCML files)
-* Sub-entities
-* Texture Packer atlases
-* Bone alpha
-* *Animated* bone scales
-
-> Note about bone alpha: Spriter allows a bone's transparency (aka alpha) to be animated.  This affects the sprites that are children of the bone.
-
-> Note about bone scales: Strictly speaking, the importer supports a bone changing its scale.  It will not *tween* (i.e. animate) a bone's scale, however.
+* **Collision rectangles.**  Spriter allows the artist to create box colliders that can be animated similar to how an image is animated.
+* **SCON files.**  SCON files are an alternative to SCML files.  Stui works only with SCML files.  Spriter can easily convert a SCON file into a SCML file with its **File** | **Save As** feature.
+* **Sub-entities.**  Basically animations within animations.
+* **Texture Packer atlases.**  Stui works great with Unity's sprite atlases.  You are encouraged to use them instead.
+* **Bone alpha.**  Spriter allows a *bone's* transparency (aka alpha) to be animated.  This affects the sprites that are children of the bone.  In practce, it doesn't look very good due to all of the overlapping sprites.
+* **Animated bone scales.**  Strictly speaking, the importer supports a bone changing its scale.  It will not *tween* (i.e. animate) a bone's scale, however.
 
 ## Import Options.
 
