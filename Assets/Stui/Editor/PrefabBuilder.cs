@@ -27,7 +27,6 @@ namespace Stui.Prefabs
 
     using UnityEngine.Rendering;
     using Stui.Extensions;
-    using Unity.VisualScripting;
 
     public class PrefabBuilder : UnityEngine.Object
     {
@@ -539,7 +538,7 @@ namespace Stui.Prefabs
                 // If an EventController component doesn't exist on the parent (which is assumed to be the root) then create one.
                 if (eventControllerComponent == null)
                 {
-                    eventControllerComponent = parentTransform.AddComponent<EventController>();
+                    eventControllerComponent = parentTransform.gameObject.AddComponent<EventController>();
                 }
             }
             else if (eventsTransform != null)
@@ -567,7 +566,7 @@ namespace Stui.Prefabs
 
             if (entityInfo.soundItems.Count > 0)
             {
-                soundController = parentTransform.AddComponent<SoundController>();
+                soundController = parentTransform.gameObject.AddComponent<SoundController>();
 
                 foreach (var soundItem in entityInfo.soundItems)
                 {

@@ -23,7 +23,7 @@ namespace Stui.Importing
 
         bool IsCanceled { get; }
 
-        public void Cancel();
+        void Cancel();
     }
 
     public class BuildMonitorWindow : EditorWindow, IBuildTaskContext

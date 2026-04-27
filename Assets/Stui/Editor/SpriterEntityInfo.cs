@@ -13,6 +13,7 @@ using System.Linq;
 namespace Stui.EntityInfo
 {
     using Importing;
+    using Stui.Extensions;
     using UnityEditor;
     using Debug = UnityEngine.Debug;
 
@@ -705,7 +706,7 @@ namespace Stui.EntityInfo
                 {
                     var varline = anim.metadata.varlines[i];
 
-                    var varInstanceInfo = varInstanceInfos.GetValueOrDefault(varline.varDefId);
+                    var varInstanceInfo = varInstanceInfos.GetOrDefault(varline.varDefId);
                     varline.varDef = varInstanceInfo?.varDef;
 
                     if (varline.varDef != null)
@@ -731,7 +732,7 @@ namespace Stui.EntityInfo
                     {
                         var tag = taglineKey.tags[tagIdx];
 
-                        var tagInstanceInfo = tagInstanceInfos.GetValueOrDefault(tag.tagId);
+                        var tagInstanceInfo = tagInstanceInfos.GetOrDefault(tag.tagId);
                         tag.tagName = tagInstanceInfo?.tagDef?.name;
 
                         if (tag.tagName != null)
@@ -1089,7 +1090,7 @@ namespace Stui.EntityInfo
                     {
                         var varline = timeline.metadata.varlines[i];
 
-                        var varInstanceInfo = info.varInstanceInfos.GetValueOrDefault(varline.varDefId);
+                        var varInstanceInfo = info.varInstanceInfos.GetOrDefault(varline.varDefId);
                         varline.varDef = varInstanceInfo?.varDef;
 
                         if (varline.varDef != null)
@@ -1115,7 +1116,7 @@ namespace Stui.EntityInfo
                         {
                             var tag = taglineKey.tags[tagIdx];
 
-                            var tagInstanceInfo = info.tagInstanceInfos.GetValueOrDefault(tag.tagId);
+                            var tagInstanceInfo = info.tagInstanceInfos.GetOrDefault(tag.tagId);
                             tag.tagName = tagInstanceInfo?.tagDef?.name;
 
                             if (tag.tagName != null)
@@ -1168,7 +1169,7 @@ namespace Stui.EntityInfo
                     {
                         var varline = eventline.metadata.varlines[i];
 
-                        var varInstanceInfo = info.varInstanceInfos.GetValueOrDefault(varline.varDefId);
+                        var varInstanceInfo = info.varInstanceInfos.GetOrDefault(varline.varDefId);
                         varline.varDef = varInstanceInfo?.varDef;
 
                         if (varline.varDef != null)
@@ -1193,7 +1194,7 @@ namespace Stui.EntityInfo
                         {
                             var tag = taglineKey.tags[tagIdx];
 
-                            var tagInstanceInfo = info.tagInstanceInfos.GetValueOrDefault(tag.tagId);
+                            var tagInstanceInfo = info.tagInstanceInfos.GetOrDefault(tag.tagId);
                             tag.tagName = tagInstanceInfo?.tagDef?.name;
 
                             if (tag.tagName != null)

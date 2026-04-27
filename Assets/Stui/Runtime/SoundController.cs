@@ -41,7 +41,9 @@ namespace Stui
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(soundlineName, animationName, time);
+            string s = soundlineName + animationName + time.ToString();
+
+            return s.GetHashCode();
         }
     }
 

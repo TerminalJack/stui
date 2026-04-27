@@ -4,6 +4,7 @@
 // Portions of this file are derived from the Spriter2UnityDX project.
 // The original author provided an open-use permission statement, preserved in THIRD_PARTY_NOTICES.md.
 
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Stui.Extensions
@@ -40,6 +41,29 @@ namespace Stui.Extensions
                 component = gameObject.AddComponent<T>();
             }
             return component;
+        }
+
+        // GetOrDefault() is a version of GetValueOrDefault() that is compatible with Unity
+        // versions 2019 and 2020 (and later.)
+
+        public static TValue GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key)
+        {
+            if (dict == null)
+            {
+                throw new System.ArgumentNullException(nameof(dict));
+            }
+
+            return dict.TryGetValue(key, out var value) ? value : default;
+        }
+
+        public static TValue GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key, TValue defaultValue)
+        {
+            if (dict == null)
+            {
+                throw new System.ArgumentNullException(nameof(dict));
+            }
+
+            return dict.TryGetValue(key, out var value) ? value : defaultValue;
         }
     }
 }
