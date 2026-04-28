@@ -180,7 +180,7 @@ namespace Stui.Importing
 
                 if (GUILayout.Button("Dismiss", GUILayout.Width(100), GUILayout.Height(24)))
                 {
-                    Close();
+                    EditorApplication.delayCall += () => Close();
                 }
 
                 GUILayout.FlexibleSpace(); // Causes button to be centered.

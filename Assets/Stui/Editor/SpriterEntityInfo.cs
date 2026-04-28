@@ -26,7 +26,7 @@ namespace Stui.EntityInfo
 
     public class TagInstanceInfo
     {
-        public TagListItem tagDef;
+        public TagDef tagDef;
         public bool bindPoseValue; // Value of this tag on the first frame of the first animation.
         public GameObject gameObject; // Where the SpriterTag component can be found.
     }
@@ -97,7 +97,7 @@ namespace Stui.EntityInfo
 
         public List<SpriterSoundItem> soundItems = new List<SpriterSoundItem>();
 
-        // This is the entity-scoped metadata.  The key for these is either VarDef.id or TagListItem.id.
+        // This is the entity-scoped metadata.  The key for these is either VarDef.id or TagDef.id.
         public Dictionary<int, VarInstanceInfo> varInstanceInfos = new Dictionary<int, VarInstanceInfo>(); // Empty if there aren't any variables for this object.
         public Dictionary<int, TagInstanceInfo> tagInstanceInfos = new Dictionary<int, TagInstanceInfo>(); // Empty if there aren't any tags for this object.
 
@@ -231,7 +231,7 @@ namespace Stui.EntityInfo
                     .LastOrDefault(mk => mk.time_s == currentTime)
                 let isBoneTl = tl.objectType == ObjectType.bone
                 let refs = isBoneTl ? mlk?.boneRefs : mlk?.objectRefs
-                let myRef = refs?.FirstOrDefault(r => r.timeline == tl.id)
+                let myRef = refs?.FirstOrDefault(r => r.timelineId == tl.id)
                 where myRef == null
                 select new
                 {
@@ -327,7 +327,7 @@ namespace Stui.EntityInfo
                  from mlk in anim.mainlineKeys
                  from objectRef in mlk.objectRefs
                  from timeline in anim.timelines
-                 where objectRef.timeline == timeline.id && timeline.objectType == ObjectType.bone
+                 where objectRef.timelineId == timeline.id && timeline.objectType == ObjectType.bone
                  select new
                  {
                      AnimationName = anim.name,
@@ -366,7 +366,7 @@ namespace Stui.EntityInfo
                 (from anim in entity.animations
                  from mlk in anim.mainlineKeys
                  from boneRef in mlk.boneRefs
-                 let boneTimeline = anim.timelines.FirstOrDefault(t => t.id == boneRef.timeline)
+                 let boneTimeline = anim.timelines.FirstOrDefault(t => t.id == boneRef.timelineId)
                  let boneName = boneTimeline?.name ?? "Unknown"
                  from tlk in boneTimeline.keys
                  let scaleX = System.Math.Round(tlk.info.scale_x, 4)
@@ -465,7 +465,7 @@ namespace Stui.EntityInfo
                 (from anim in entity.animations
                  from mlk in anim.mainlineKeys
                  from boneRef in mlk.boneRefs
-                 let boneTimeline = anim.timelines.FirstOrDefault(t => t.id == boneRef.timeline)
+                 let boneTimeline = anim.timelines.FirstOrDefault(t => t.id == boneRef.timelineId)
                  let boneName = boneTimeline?.name ?? "Unknown"
                  from tlk in boneTimeline.keys
                  let alpha = System.Math.Round(tlk.info.a, 4)
@@ -551,11 +551,11 @@ namespace Stui.EntityInfo
 
         private void LogProjectScopedTagInfo(ScmlObject scmlObject)
         {
-            if (scmlObject.tags.Count > 0)
+            if (scmlObject.tagDefs.Count > 0)
             {
                 Log("This Spriter project has the following tag definitions:");
 
-                foreach (var tagDef in scmlObject.tags)
+                foreach (var tagDef in scmlObject.tagDefs)
                 {
                     Log($"    tag id: {tagDef.id}, tag name: {tagDef.name}");
                 }
@@ -636,24 +636,24 @@ namespace Stui.EntityInfo
                 Log($"Entity '{entity.name}' has no variable definitions.");
             }
 
-            var entityScopedTagIds = (
+            var entityScopedTagDefIds = (
                 from anim in entity.animations
                 where anim.metadata != null
                 from taglineKeys in anim.metadata.taglineKeys
                 from tags in taglineKeys.tags
-                select tags.tagId
+                select tags.tagDefId
             )
             .Distinct()
             .OrderBy(id => id)
             .ToList();
 
-            if (entityScopedTagIds.Count > 0)
+            if (entityScopedTagDefIds.Count > 0)
             {
                 Log($"Entity '{entity.name}' uses the following entity-scoped tags:");
 
-                foreach (var tagId in entityScopedTagIds)
+                foreach (var tagDefId in entityScopedTagDefIds)
                 {
-                    var tagDef = scmlObject.tags.FirstOrDefault(t => t.id == tagId);
+                    var tagDef = scmlObject.tagDefs.FirstOrDefault(t => t.id == tagDefId);
 
                     if (tagDef != null)
                     {
@@ -666,7 +666,7 @@ namespace Stui.EntityInfo
                             .taglineKeys?.ElementAtOrDefault(0);
 
                         bool bindPoseValue = (firstKeyFromFirstAnim?.time_s is 0f)
-                            ? firstKeyFromFirstAnim.tags.Exists(t => t.tagId == tagId)
+                            ? firstKeyFromFirstAnim.tags.Exists(t => t.tagDefId == tagDefId)
                             : false;
 
                         var newTagInstanceInfo = new TagInstanceInfo()
@@ -679,7 +679,7 @@ namespace Stui.EntityInfo
                     }
                     else
                     {
-                        Debug.LogWarning($"An invalid id ({tagId}) was found while processing the entity-scoped tag " +
+                        Debug.LogWarning($"An invalid id ({tagDefId}) was found while processing the entity-scoped tag " +
                             $"metadata for entity: '{entity.name}'.  A tag list item with that id was not found.");
                     }
                 }
@@ -732,21 +732,21 @@ namespace Stui.EntityInfo
                     {
                         var tag = taglineKey.tags[tagIdx];
 
-                        var tagInstanceInfo = tagInstanceInfos.GetOrDefault(tag.tagId);
+                        var tagInstanceInfo = tagInstanceInfos.GetOrDefault(tag.tagDefId);
                         tag.tagName = tagInstanceInfo?.tagDef?.name;
 
                         if (tag.tagName != null)
                         {
                             Log($"Entity-scoped tagline TagInfo name assigned for entity: {entity.name}, " +
                                 $"animation: {anim.name}, metadata.taglines[{keyIdx}].tags[{tagIdx}], (id: {tag.id}, " +
-                                $"tagId: {tag.tagId})");
+                                $"tagDefId: {tag.tagDefId})");
                             Log($"    tag name: {tag.tagName}, bind pose value: {tagInstanceInfo.bindPoseValue}");
                         }
                         else
                         {
                             Debug.LogWarning($"While processing the tag metadata (at index [${keyIdx}][{tagIdx}]) " +
                                 $"for entity: '{entity.name}', animation: '{anim.name}', a tag definition for " +
-                                $"id: {tag.tagId} was missing from the tag definitions.");
+                                $"id: {tag.tagDefId} was missing from the tag definitions.");
                         }
                     }
                 }
@@ -850,25 +850,25 @@ namespace Stui.EntityInfo
                 }
             }
 
-            var objectScopedTagIds = (
+            var objectScopedTagDefIds = (
                 from anim in entity.animations
                 from timeline in anim.timelines
                 where timeline.name == info.name && timeline.objectType == info.type && timeline.metadata != null
                 from taglineKeys in timeline.metadata.taglineKeys
                 from tags in taglineKeys.tags
-                select tags.tagId
+                select tags.tagDefId
             )
             .Distinct()
             .OrderBy(id => id)
             .ToList();
 
-            if (objectScopedTagIds.Count > 0)
+            if (objectScopedTagDefIds.Count > 0)
             {
                 Log($"    '{info.name}' uses the following object-scoped tags:");
 
-                foreach (var tagId in objectScopedTagIds)
+                foreach (var tagDefId in objectScopedTagDefIds)
                 {
-                    var tagDef = scmlObject.tags.FirstOrDefault(t => t.id == tagId);
+                    var tagDef = scmlObject.tagDefs.FirstOrDefault(t => t.id == tagDefId);
 
                     if (tagDef != null)
                     {
@@ -882,7 +882,7 @@ namespace Stui.EntityInfo
                             .taglineKeys?.ElementAtOrDefault(0);
 
                         bool bindPoseValue = (firstKeyFromFirstAnim?.time_s is 0f)
-                            ? firstKeyFromFirstAnim.tags.Exists(t => t.tagId == tagId)
+                            ? firstKeyFromFirstAnim.tags.Exists(t => t.tagDefId == tagDefId)
                             : false;
 
                         var newTagInstanceInfo = new TagInstanceInfo()
@@ -895,7 +895,7 @@ namespace Stui.EntityInfo
                     }
                     else
                     {
-                        Debug.LogWarning($"An invalid id ({tagId}) was found while processing the object-scoped tag " +
+                        Debug.LogWarning($"An invalid id ({tagDefId}) was found while processing the object-scoped tag " +
                             $"metadata for entity: '{entity.name}', timeline: '{info.name}'.  A tag list item with " +
                             "that id was not found.");
                     }
@@ -986,25 +986,25 @@ namespace Stui.EntityInfo
                 }
             }
 
-            var eventScopedTagIds = (
+            var eventScopedTagDefIds = (
                 from anim in entity.animations
                 from eventline in anim.eventlines
                 where eventline.name == info.name && eventline.metadata != null
                 from taglineKeys in eventline.metadata.taglineKeys
                 from tags in taglineKeys.tags
-                select tags.tagId
+                select tags.tagDefId
             )
             .Distinct()
             .OrderBy(id => id)
             .ToList();
 
-            if (eventScopedTagIds.Count > 0)
+            if (eventScopedTagDefIds.Count > 0)
             {
                 Log($"    '{info.name}' uses the following event-scoped tags:");
 
-                foreach (var tagId in eventScopedTagIds)
+                foreach (var tagDefId in eventScopedTagDefIds)
                 {
-                    var tagDef = scmlObject.tags.FirstOrDefault(t => t.id == tagId);
+                    var tagDef = scmlObject.tagDefs.FirstOrDefault(t => t.id == tagDefId);
 
                     if (tagDef != null)
                     {
@@ -1018,7 +1018,7 @@ namespace Stui.EntityInfo
                             .taglineKeys?.ElementAtOrDefault(0);
 
                         bool bindPoseValue = (firstKeyFromFirstAnim?.time_s is 0f)
-                            ? firstKeyFromFirstAnim.tags.Exists(t => t.tagId == tagId)
+                            ? firstKeyFromFirstAnim.tags.Exists(t => t.tagDefId == tagDefId)
                             : false;
 
                         var newTagInstanceInfo = new TagInstanceInfo()
@@ -1031,7 +1031,7 @@ namespace Stui.EntityInfo
                     }
                     else
                     {
-                        Debug.LogWarning($"An invalid id ({tagId}) was found while processing the event-scoped tag " +
+                        Debug.LogWarning($"An invalid id ({tagDefId}) was found while processing the event-scoped tag " +
                             $"metadata for entity: '{entity.name}', event: '{info.name}'.  A tag list item with that " +
                             "id was not found.");
                     }
@@ -1116,21 +1116,21 @@ namespace Stui.EntityInfo
                         {
                             var tag = taglineKey.tags[tagIdx];
 
-                            var tagInstanceInfo = info.tagInstanceInfos.GetOrDefault(tag.tagId);
+                            var tagInstanceInfo = info.tagInstanceInfos.GetOrDefault(tag.tagDefId);
                             tag.tagName = tagInstanceInfo?.tagDef?.name;
 
                             if (tag.tagName != null)
                             {
                                 Log($"    Object-scoped tagline TagInfo name assigned for entity: {entity.name}, " +
                                     $"animation: {anim.name}, timeline: {timeline.name}, " +
-                                    $"metadata.taglines[{keyIdx}].tags[{tagIdx}], (id: {tag.id}, tagId: {tag.tagId})");
+                                    $"metadata.taglines[{keyIdx}].tags[{tagIdx}], (id: {tag.id}, tagId: {tag.tagDefId})");
                                 Log($"        tag name: {tag.tagName}, bind pose value: {tagInstanceInfo.bindPoseValue}");
                             }
                             else
                             {
                                 Debug.LogWarning($"While processing the tag metadata (at index [${keyIdx}][{tagIdx}]) " +
                                     $"for entity: '{entity.name}', animation: '{anim.name}', timeline: '{timeline.name}', " +
-                                    $" a tag definition for id: {tag.tagId} was missing from the tag definitions.");
+                                    $" a tag definition for id: {tag.tagDefId} was missing from the tag definitions.");
                             }
                         }
                     }
@@ -1194,19 +1194,19 @@ namespace Stui.EntityInfo
                         {
                             var tag = taglineKey.tags[tagIdx];
 
-                            var tagInstanceInfo = info.tagInstanceInfos.GetOrDefault(tag.tagId);
+                            var tagInstanceInfo = info.tagInstanceInfos.GetOrDefault(tag.tagDefId);
                             tag.tagName = tagInstanceInfo?.tagDef?.name;
 
                             if (tag.tagName != null)
                             {
                                 Log($"    Event-scoped tagline TagInfo for entity: {entity.name}, animation: {anim.name}, " +
-                                    $"eventlinel: {eventline.name}, metadata.taglines[{keyIdx}].tags[{tagIdx}], (id: {tag.id}, tagId: {tag.tagId})");
+                                    $"eventlinel: {eventline.name}, metadata.taglines[{keyIdx}].tags[{tagIdx}], (id: {tag.id}, tagId: {tag.tagDefId})");
                                 Log($"        tag name: {tag.tagName}, bind pose value: {tagInstanceInfo.bindPoseValue}");
                             }
                             else
                             {
                                 Debug.LogWarning($"While processing the tag metadata for entity: '{entity.name}', animation: '{anim.name}', " +
-                                    $"eventline: '{eventline.name}', a tag definition for id: {tag.tagId} was missing from the tag definitions.");
+                                    $"eventline: '{eventline.name}', a tag definition for id: {tag.tagDefId} was missing from the tag definitions.");
                             }
                         }
                     }
@@ -1339,20 +1339,20 @@ namespace Stui.EntityInfo
 
                     var fileItem =
                         scmlObject.folders
-                            .FirstOrDefault(f => f.id == soundObject.folder)?
+                            .FirstOrDefault(f => f.id == soundObject.folderId)?
                             .files
-                            .FirstOrDefault(file => file.id == soundObject.file);
+                            .FirstOrDefault(file => file.id == soundObject.fileId);
 
                     if (fileItem == null)
                     {
                         Debug.LogWarning("A soundline references a sound file but that file doesn't exist in the " +
-                            $"project's folder/file list.  FolderId: {soundObject.folder}, FileId: {soundObject.file}");
+                            $"project's folder/file list.  FolderId: {soundObject.folderId}, FileId: {soundObject.fileId}");
                     }
                     else if (fileItem.objectType != ObjectType.sound)
                     {
                         Debug.LogWarning("A soundline references a sound file but the referenced file doesn't have the " +
                             $"type of {ObjectType.sound}.  The referenced file has a type of {fileItem.objectType}.  " +
-                            $"FolderId: {soundObject.folder}, FileId: {soundObject.file}");
+                            $"FolderId: {soundObject.folderId}, FileId: {soundObject.fileId}");
                     }
                     else if (!System.IO.File.Exists($"{spriterProjDirectory}/{fileItem.name}"))
                     {
@@ -1441,7 +1441,7 @@ namespace Stui.EntityInfo
                 from anim in entity.animations
                 from mlk in anim.mainlineKeys
                 from oref in mlk.objectRefs
-                let tl = anim.timelines.FirstOrDefault(t => t.id == oref.timeline)
+                let tl = anim.timelines.FirstOrDefault(t => t.id == oref.timelineId)
                 where tl != null && tl.objectType == ObjectType.sprite
                 from key in tl.keys
                 where key.info is SpriteInfo
@@ -1449,7 +1449,7 @@ namespace Stui.EntityInfo
 
             foreach (var si in spriteInfos)
             {
-                var spriteFileInfo = fileInfo[si.folder][si.file];
+                var spriteFileInfo = fileInfo[si.folderId][si.fileId];
                 si.InitPivots(spriteFileInfo);
             }
 
@@ -1458,7 +1458,7 @@ namespace Stui.EntityInfo
                 (from anim in entity.animations
                  from mlk in anim.mainlineKeys
                  from oref in mlk.objectRefs
-                 let tl = anim.timelines.FirstOrDefault(t => t.id == oref.timeline)
+                 let tl = anim.timelines.FirstOrDefault(t => t.id == oref.timelineId)
                  where tl != null && tl.objectType == ObjectType.sprite
                  from key in tl.keys
                  let si = key.info as SpriteInfo
@@ -1488,12 +1488,12 @@ namespace Stui.EntityInfo
                 (from anim in entity.animations
                  from mlk in anim.mainlineKeys
                  from boneRef in mlk.boneRefs
-                 let boneTimeline = anim.timelines.FirstOrDefault(t => t.id == boneRef.timeline)
+                 let boneTimeline = anim.timelines.FirstOrDefault(t => t.id == boneRef.timelineId)
                  let boneName = boneTimeline?.name ?? "Unknown"
-                 let parentBoneName = boneRef.parent == -1
+                 let parentBoneName = boneRef.parentRefId == -1
                              ? "rootTransform"
                              : anim.timelines.FirstOrDefault(t =>
-                                 t.id == mlk.boneRefs.FirstOrDefault(b => b.id == boneRef.parent)?.timeline)?.name ?? "Unknown"
+                                 t.id == mlk.boneRefs.FirstOrDefault(b => b.id == boneRef.parentRefId)?.timelineId)?.name ?? "Unknown"
                  select new
                  {
                      boneName,
@@ -1536,12 +1536,12 @@ namespace Stui.EntityInfo
                 (from anim in entity.animations
                  from mlk in anim.mainlineKeys
                  from objectRef in mlk.objectRefs
-                 let objectTimeline = anim.timelines.FirstOrDefault(t => t.id == objectRef?.timeline)
+                 let objectTimeline = anim.timelines.FirstOrDefault(t => t.id == objectRef?.timelineId)
                  let objectName = objectTimeline?.name ?? "Unknown"
-                 let parentBoneName = objectRef.parent == -1
+                 let parentBoneName = objectRef.parentRefId == -1
                      ? "rootTransform"
                      : anim.timelines.FirstOrDefault(t =>
-                         t.id == mlk.boneRefs.FirstOrDefault(b => b.id == objectRef.parent)?.timeline)?.name ?? "Unknown"
+                         t.id == mlk.boneRefs.FirstOrDefault(b => b.id == objectRef.parentRefId)?.timelineId)?.name ?? "Unknown"
                  select new
                  {
                      objectName,
@@ -1595,7 +1595,7 @@ namespace Stui.EntityInfo
 
                 let isBoneTl = tl.objectType == ObjectType.bone
                 let refs = isBoneTl ? mlk?.boneRefs : mlk?.objectRefs
-                let myRef = refs?.FirstOrDefault(r => r.timeline == tl.id)
+                let myRef = refs?.FirstOrDefault(r => r.timelineId == tl.id)
 
                 let zIndex = myRef != null ? myRef.z_index : 0
 
@@ -1719,17 +1719,17 @@ namespace Stui.EntityInfo
 
                 let isBoneTl = tl.objectType == ObjectType.bone
                 let refs = isBoneTl ? mlk?.boneRefs : mlk?.objectRefs
-                let myRef = refs?.FirstOrDefault(r => r.timeline == tl.id)
+                let myRef = refs?.FirstOrDefault(r => r.timelineId == tl.id)
 
                 let parentRef =
-                    (myRef == null || myRef.parent == -1 || mlk == null)
+                    (myRef == null || myRef.parentRefId == -1 || mlk == null)
                         ? null
-                        : mlk.boneRefs.FirstOrDefault(r => r.id == myRef.parent)
+                        : mlk.boneRefs.FirstOrDefault(r => r.id == myRef.parentRefId)
 
                 let parentName =
                     parentRef == null
                         ? "rootTransform"
-                        : timelinesById[anim][parentRef.timeline].name
+                        : timelinesById[anim][parentRef.timelineId].name
 
                 select new
                 {

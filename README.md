@@ -232,9 +232,9 @@ This component updates the sprite renderer during `LateUpdate()`.  The value of 
 
 See the description of the `Sorting Order Updater` component for an image that includes the `Sprite Visibility` component.
 
-This component is responsible for enabling or disabling its corresponding sprite renderer.  Newer versions of Unity don't allow boolean properties to be animated so this component is basically a hack to get around that.
+This component is responsible for enabling or disabling its corresponding sprite renderer.  Newer versions of Unity don't allow animation curves (built programatically) to be bound to the `SpriteRenderer.enabled` property so this component is basically a hack to get around that.
 
-The component's `Is Visible` property will be set by animation curves when a sprite needs to be visible or not.  A value of 0 will hide the sprite.  A value of 1 will show it.
+The component's `Is Visible` property will be set by animation curves when a sprite needs to be visible or not.  A value of `false` will hide the sprite.  A value of `true` will show it.
 
 ### `Texture Controller`
 

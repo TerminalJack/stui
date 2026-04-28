@@ -26,7 +26,7 @@ namespace Stui.Importing
     {   // Master class that holds all the other data
         [XmlElement("folder")] public List<Folder> folders = new List<Folder>(); // <folder> tags
         [XmlElement("entity")] public List<Entity> entities = new List<Entity>(); // <entity> tags
-        [XmlArray("tag_list"), XmlArrayItem("i")] public List<TagListItem> tags = new List<TagListItem>();
+        [XmlArray("tag_list"), XmlArrayItem("i")] public List<TagDef> tagDefs = new List<TagDef>();
     }
 
     public class Folder : ScmlElement
@@ -148,7 +148,7 @@ namespace Stui.Importing
         [XmlAttribute("val")] public string value;
     }
 
-    public class TagListItem : ScmlElement
+    public class TagDef : ScmlElement
     {
         [XmlAttribute] public string name { get; set; }
     }
@@ -160,7 +160,7 @@ namespace Stui.Importing
 
     public class TagInfo : ScmlElement
     {
-        [XmlAttribute("t")] public int tagId;
+        [XmlAttribute("t")] public int tagDefId;
         [XmlIgnore] public string tagName; // This will be assigned during preprocessing by SpriterEntityInfo.
     }
 
@@ -189,15 +189,15 @@ namespace Stui.Importing
 
     public class SpriterSound : ScmlElement
     {
-        [XmlAttribute("folder")] public int folder;
-        [XmlAttribute("file")] public int file;
+        [XmlAttribute("folder")] public int folderId;
+        [XmlAttribute("file")] public int fileId;
         [XmlAttribute("panning")] public float panning;
         [XmlAttribute("volume")] public float volume;
 
         public SpriterSound()
         {
-            folder = -1;
-            file = -1;
+            folderId = -1;
+            fileId = -1;
             panning = 0f;
             volume = 1.0f;
         }
@@ -211,12 +211,12 @@ namespace Stui.Importing
 
     public class MapInstruction
     {
-        public MapInstruction() { target_folder = -1; target_file = -1; }
+        public MapInstruction() { targetFolderId = -1; targetFileId = -1; }
 
-        [XmlAttribute] public int folder { get; set; }
-        [XmlAttribute] public int file { get; set; }
-        [XmlAttribute] public int target_folder { get; set; }
-        [XmlAttribute] public int target_file { get; set; }
+        [XmlAttribute("folder")] public int folderId { get; set; }
+        [XmlAttribute("file")] public int fileId { get; set; }
+        [XmlAttribute("target_folder")] public int targetFolderId { get; set; }
+        [XmlAttribute("target_file")] public int targetFileId { get; set; }
     }
 
     public class Animation : ScmlElement
@@ -277,11 +277,11 @@ namespace Stui.Importing
 
     public class Ref : ScmlElement
     {
-        public Ref() { parent = -1; }
+        public Ref() { parentRefId = -1; }
 
-        [XmlAttribute] public int parent { get; set; } // -1==no parent - uses ScmlObject spatialInfo as parentInfo
-        [XmlAttribute] public int timeline { get; set; } //Dengar.NOTE: Again, the above comment is an artifact from the pseudocode
-        [XmlAttribute] public int key { get; set; }     //However, the fact that -1 equals "no parent" does come in useful later
+        [XmlAttribute("parent")] public int parentRefId { get; set; } // -1==no parent - uses ScmlObject spatialInfo as parentInfo
+        [XmlAttribute("timeline")] public int timelineId { get; set; }
+        [XmlAttribute("key")] public int timelineKeyId { get; set; }
         private float z;
         [XmlAttribute]
         public float z_index
@@ -516,7 +516,7 @@ namespace Stui.Importing
 
         public override string ToString()
         {
-            return $"{base.ToString()}, {nameof(SpriteInfo)}: folder: {folder}, file: {file}, " +
+            return $"{base.ToString()}, {nameof(SpriteInfo)}: folderId: {folderId}, fileId: {fileId}, " +
                 $"pivot_x:{pivot_x}, pivot_y:{pivot_y}, " +
                 $"default_pivot_x:{default_pivot_x}, default_pivot_y:{default_pivot_y}, " +
                 $"IsDefaultPivots:{IsDefaultPivots}";
@@ -527,8 +527,8 @@ namespace Stui.Importing
             return (SpatialInfo)MemberwiseClone();
         }
 
-        [XmlAttribute] public int folder { get; set; }
-        [XmlAttribute] public int file { get; set; }
+        [XmlAttribute("folder")] public int folderId { get; set; }
+        [XmlAttribute("file")] public int fileId { get; set; }
 
         [XmlAttribute] public float pivot_x { get; set; } // Pivot read from SCML file or file defaults if not read.
         [XmlAttribute] public float pivot_y { get; set; }

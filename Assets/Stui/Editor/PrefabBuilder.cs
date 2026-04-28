@@ -672,28 +672,28 @@ namespace Stui.Prefabs
 
                 foreach (var mapInstruction in characterMap.maps)
                 {
-                    Sprite srcSprite = TryGetSprite(folders, mapInstruction.folder, mapInstruction.file);
+                    Sprite srcSprite = TryGetSprite(folders, mapInstruction.folderId, mapInstruction.fileId);
 
                     if (srcSprite == null)
                     {
                         Debug.LogWarning($"Stui: ProcessCharacterMaps(): For entity '{entity.name}', " +
-                            $"character map '{characterMap.name}', the source sprite at folder: {mapInstruction.folder}, " +
-                            $"file: {mapInstruction.file} wasn't found.");
+                            $"character map '{characterMap.name}', the source sprite at folderId: {mapInstruction.folderId}, " +
+                            $"fileId: {mapInstruction.fileId} wasn't found.");
 
                         continue;
                     }
 
                     Sprite targetSprite = null;
 
-                    if (mapInstruction.target_folder != -1 && mapInstruction.target_file != -1)
+                    if (mapInstruction.targetFolderId != -1 && mapInstruction.targetFileId != -1)
                     {
-                        targetSprite = TryGetSprite(folders, mapInstruction.target_folder, mapInstruction.target_file);
+                        targetSprite = TryGetSprite(folders, mapInstruction.targetFolderId, mapInstruction.targetFileId);
 
                         if (targetSprite == null)
                         {
                             Debug.LogWarning($"Stui: ProcessCharacterMaps(): For entity '{entity.name}', " +
-                                $"character map '{characterMap.name}', the target sprite at folder: {mapInstruction.folder}, " +
-                                $"file: {mapInstruction.file} wasn't found.");
+                                $"character map '{characterMap.name}', the target sprite at folderId: {mapInstruction.folderId}, " +
+                                $"fileId: {mapInstruction.fileId} wasn't found.");
 
                             continue;
                         }
@@ -711,8 +711,8 @@ namespace Stui.Prefabs
                     else
                     {
                         Debug.LogWarning($"Stui: ProcessCharacterMaps(): For entity '{entity.name}', " +
-                            $"character map '{characterMap.name}', the source sprite at folder: {mapInstruction.folder}, " +
-                            $"file: {mapInstruction.file} doesn't exist in the base map.");
+                            $"character map '{characterMap.name}', the source sprite at folderId: {mapInstruction.folderId}, " +
+                            $"fileId: {mapInstruction.fileId} doesn't exist in the base map.");
                     }
                 }
 
@@ -756,7 +756,7 @@ namespace Stui.Prefabs
             while (boneRefs.Count > 0)
             {
                 var bone = boneRefs.Dequeue();
-                var timeLine = timeLines[bone.timeline];
+                var timeLine = timeLines[bone.timelineId];
                 parents[bone.id] = timeLine.name;
 
                 if (!transforms.ContainsKey(timeLine.name))
@@ -771,9 +771,9 @@ namespace Stui.Prefabs
                         continue;
                     }
 
-                    if (parents.ContainsKey(bone.parent))
+                    if (parents.ContainsKey(bone.parentRefId))
                     {   //If the parent cannot be found, it will probably be found later, so save it
-                        var parentName = parents[bone.parent];
+                        var parentName = parents[bone.parentRefId];
                         var parentTransform = transforms[parentName];
 
                         ProcessVirtualParent(parentName, ref parentTransform, spriterBoneInfo);
@@ -786,7 +786,7 @@ namespace Stui.Prefabs
                         }
 
                         transforms[timeLine.name] = child;
-                        var spatialInfo = defaultBones[timeLine.name] = timeLine.keys.Find(x => x.id == bone.key).info;
+                        var spatialInfo = defaultBones[timeLine.name] = timeLine.keys.Find(x => x.id == bone.timelineKeyId).info;
 
                         if (!spatialInfo.processed)
                         {
@@ -816,7 +816,7 @@ namespace Stui.Prefabs
         {
             foreach (var oref in key.objectRefs)
             {
-                var timeLine = timeLines[oref.timeline];
+                var timeLine = timeLines[oref.timelineId];
 
                 SpriterObjectInfo spriterObjectInfo;
                 entityInfo.objectInfo.TryGetValue(timeLine.name, out spriterObjectInfo);
@@ -836,7 +836,7 @@ namespace Stui.Prefabs
                     continue;
                 }
 
-                var parentName = parents[oref.parent];
+                var parentName = parents[oref.parentRefId];
                 var parentTransform = transforms[parentName];
 
                 ProcessVirtualParent(parentName, ref parentTransform, spriterObjectInfo);
@@ -904,7 +904,7 @@ namespace Stui.Prefabs
 
                 var renderer = rendererTransform.GetOrAddComponent<SpriteRenderer>(); // Get or create a Sprite Renderer
 
-                renderer.sprite = folders[spriteInfo.folder][spriteInfo.file];
+                renderer.sprite = folders[spriteInfo.folderId][spriteInfo.fileId];
                 renderer.sortingOrder = spriteInfo.SortingOrder;
 
                 if (needsPivotController)
@@ -922,7 +922,7 @@ namespace Stui.Prefabs
 
                 // Disable the Sprite Renderer if this isn't the first frame of the first animation
                 renderer.enabled = firstAnim;
-                spriteVisibility.isVisible = firstAnim ? 1f : 0f;
+                spriteVisibility.isVisible = firstAnim;
             }
         }
 
@@ -932,7 +932,7 @@ namespace Stui.Prefabs
         {
             foreach (var oref in key.objectRefs)
             {
-                var timeLine = timeLines[oref.timeline];
+                var timeLine = timeLines[oref.timelineId];
 
                 SpriterObjectInfo spriterObjectInfo;
                 entityInfo.objectInfo.TryGetValue(timeLine.name, out spriterObjectInfo);
@@ -952,7 +952,7 @@ namespace Stui.Prefabs
                     continue;
                 }
 
-                var parentName = parents[oref.parent];
+                var parentName = parents[oref.parentRefId];
                 var parentTransform = transforms[parentName];
 
                 ProcessVirtualParent(parentName, ref parentTransform, spriterObjectInfo);

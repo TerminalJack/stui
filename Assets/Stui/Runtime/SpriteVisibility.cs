@@ -6,14 +6,15 @@
 
 using UnityEngine;
 
-// This script exists to provide compatibility between a wide variety of Unity versions.
+// This script exists to provide compatibility between a wide variety of Unity versions.  At some point it was no
+// longer possible to bind animation curves to the SpriteRenderer.enabled property.
 
 namespace Stui
 {
     [ExecuteAlways]
     public class SpriteVisibility : MonoBehaviour
     {
-        public float isVisible = 0f; // Bools aren't supported in the animator on newer versions of Unity so we get this hack.
+        public bool isVisible = false;
 
         private SpriteRenderer _spriteRenderer;
 
@@ -31,8 +32,7 @@ namespace Stui
         {
             if (_spriteRenderer != null)
             {
-                isVisible = Mathf.RoundToInt(isVisible);
-                _spriteRenderer.enabled = isVisible != 0;
+                _spriteRenderer.enabled = isVisible;
             }
         }
     }

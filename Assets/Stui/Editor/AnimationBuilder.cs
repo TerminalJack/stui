@@ -113,9 +113,9 @@ namespace Stui.Animations
                 {
                     var bref = brefs.Dequeue();
 
-                    if (bref.parent < 0 || parentTimelines.ContainsKey(bref.parent))
+                    if (bref.parentRefId < 0 || parentTimelines.ContainsKey(bref.parentRefId))
                     {
-                        var timeLine = timeLines[bref.timeline];
+                        var timeLine = timeLines[bref.timelineId];
                         parentTimelines[bref.id] = new List<TimelineKey>(timeLine.keys);
                         Transform bone;
 
@@ -136,7 +136,7 @@ namespace Stui.Animations
 
                 foreach (var objRef in key.objectRefs)
                 {
-                    var timeLine = timeLines[objRef.timeline];
+                    var timeLine = timeLines[objRef.timelineId];
 
                     if (timeLine.objectType == ObjectType.sprite)
                     {
@@ -390,7 +390,7 @@ namespace Stui.Animations
             }
         }
 
-        private void CreateTagCurve(AnimationCurve tagCurve, Animation animation, List<TaglineKey> taglineKeys, TagListItem tagDef)
+        private void CreateTagCurve(AnimationCurve tagCurve, Animation animation, List<TaglineKey> taglineKeys, TagDef tagDef)
         {
             List<AnimationCurve> allCurves = new List<AnimationCurve>();
 
@@ -413,14 +413,14 @@ namespace Stui.Animations
                 }
 
                 float startTime = key.time_s;
-                float startValue = key.tags.Exists(t => t.tagId == tagDef.id) ? 1f : 0f;
+                float startValue = key.tags.Exists(t => t.tagDefId == tagDef.id) ? 1f : 0f;
 
                 // Skip any keys that have the same value as startValue.
                 int nextKeyIdx = i + 1;
 
                 for ( ; nextKeyIdx < keys.Count; ++nextKeyIdx)
                 {
-                    float nextKeyValue = keys[nextKeyIdx].tags.Exists(t => t.tagId == tagDef.id) ? 1f : 0f;
+                    float nextKeyValue = keys[nextKeyIdx].tags.Exists(t => t.tagDefId == tagDef.id) ? 1f : 0f;
                     if (nextKeyValue != startValue)
                     {
                         break;
@@ -432,7 +432,7 @@ namespace Stui.Animations
                 float endTime = nextKey != null ? nextKey.time_s : animation.length;
 
                 float endValue = nextKey != null
-                    ? nextKey.tags.Exists(t => t.tagId == tagDef.id) ? 1f : 0f
+                    ? nextKey.tags.Exists(t => t.tagDefId == tagDef.id) ? 1f : 0f
                     : startValue;
 
                 allCurves.Add(CreateCurve(CurveType.instant, startTime, endTime, startValue, endValue));
@@ -457,7 +457,7 @@ namespace Stui.Animations
                 //      animation.)  If this is the case then we need to override that and create a curve where it is
                 //      false (inactive) for the entire animation.
 
-                bool tagIsUsed = metadata?.taglineKeys?.SelectMany(k => k.tags).Any(t => t.tagId == tagDef.id) ?? false;
+                bool tagIsUsed = metadata?.taglineKeys?.SelectMany(k => k.tags).Any(t => t.tagDefId == tagDef.id) ?? false;
                 bool needCurve = tagInstanceInfo.bindPoseValue || tagIsUsed;
 
                 if (needCurve)
@@ -826,7 +826,7 @@ namespace Stui.Animations
                                 {   //Add a Texture Controller if one doesn't already exist
                                     swapper = rendererTransform.gameObject.AddComponent<TextureController>();
                                     var info = (SpriteInfo)defaultInfo;
-                                    swapper.Sprites = new[] { Folders[info.folder][info.file] };
+                                    swapper.Sprites = new[] { Folders[info.folderId][info.fileId] };
                                 }
 
                                 SetKeys(kvPair.Value, timeLine, ref swapper.Sprites, animation);
@@ -941,13 +941,13 @@ namespace Stui.Animations
 
             // The SpriteVisibility component is on this game object or a child.
             var visibilityComponent = child.GetComponentInChildren<SpriteVisibility>(includeInactive: true);
-            var rendererIsVisible = visibilityComponent.isVisible != 0f;
+            var rendererIsVisible = visibilityComponent.isVisible;
 
             var kfsEnabled = new List<Keyframe>();
 
             foreach (var key in keys)
             {   // If it is present, enable the GameObject if it isn't already enabled
-                var mref = key.objectRefs.Find(x => x.timeline == timeLine.id);
+                var mref = key.objectRefs.Find(x => x.timelineId == timeLine.id);
                 if (mref != null)
                 {
                     if (defaultZ == inf)
@@ -1329,10 +1329,10 @@ namespace Stui.Animations
                 float startTime = key.time_s;
                 float endTime = nextKey != null ? nextKey.time_s : animation.length;
 
-                float startValue = GetIndexOrAdd(ref sprites, Folders[info.folder][info.file]);
+                float startValue = GetIndexOrAdd(ref sprites, Folders[info.folderId][info.fileId]);
 
                 float endValue = nextInfo != null
-                    ? GetIndexOrAdd(ref sprites, Folders[nextInfo.folder][nextInfo.file])
+                    ? GetIndexOrAdd(ref sprites, Folders[nextInfo.folderId][nextInfo.fileId])
                     : startValue;
 
                 allCurves.Add(CreateCurve(CurveType.instant, startTime, endTime, startValue, endValue));
@@ -1349,7 +1349,7 @@ namespace Stui.Animations
             foreach (var key in timeLine.keys)
             {
                 var info = (SpriteInfo)key.info;
-                var sprite = Folders[info.folder][info.file];
+                var sprite = Folders[info.folderId][info.fileId];
 
                 keyframes.Add(new ObjectReferenceKeyframe { time = TweakTime(key.time_s), value = sprite });
             }
@@ -1528,7 +1528,7 @@ namespace Stui.Animations
                 {   // This is spatial data for a sprite...
                     var sinfo = info as SpriteInfo;
 
-                    if (!rv.ContainsKey(ChangedValues.Sprite) && (spriteDefaultInfo.file != sinfo.file || spriteDefaultInfo.folder != sinfo.folder))
+                    if (!rv.ContainsKey(ChangedValues.Sprite) && (spriteDefaultInfo.fileId != sinfo.fileId || spriteDefaultInfo.folderId != sinfo.folderId))
                     {
                         rv[ChangedValues.Sprite] = new AnimationCurve();
                     }
