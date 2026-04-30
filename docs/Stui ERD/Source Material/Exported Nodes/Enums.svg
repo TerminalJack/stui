@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="673px" height="267px" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(1,0,0,1,-2461,-1653)">
+        <g transform="matrix(1.88574,0,0,2.11455,0,0)">
+            <g id="Enums">
+                <g transform="matrix(0.530295,0,0,0.472914,-3.68892,-3.41061e-13)">
+                    <text x="2467.17px" y="1665.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(59,153,205);">public enum</text>
+                    <text x="2585.93px" y="1665.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(82,217,138);">ObjectType</text>
+                    <text x="2467.17px" y="1690.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(208,38,207);">{</text>
+                    <g transform="matrix(18,0,0,18,2526.55,1715.71)">
+                        <path d="M0.228,-0.49L0.231,-0.411C0.243,-0.425 0.255,-0.438 0.267,-0.448C0.279,-0.459 0.292,-0.469 0.306,-0.476C0.32,-0.484 0.335,-0.489 0.352,-0.493C0.368,-0.497 0.386,-0.499 0.406,-0.499C0.421,-0.499 0.437,-0.498 0.453,-0.497C0.469,-0.495 0.484,-0.493 0.497,-0.49L0.497,-0.407C0.481,-0.412 0.465,-0.416 0.447,-0.419C0.429,-0.422 0.413,-0.424 0.398,-0.424C0.381,-0.424 0.365,-0.422 0.352,-0.418C0.338,-0.415 0.325,-0.409 0.313,-0.401C0.301,-0.393 0.288,-0.383 0.276,-0.37C0.264,-0.358 0.251,-0.343 0.237,-0.325L0.237,-0.069L0.383,-0.069L0.383,-0L0.046,-0L0.046,-0.069L0.151,-0.069L0.151,-0.423L0.046,-0.423L0.046,-0.49L0.228,-0.49Z" style="fill:rgb(104,182,226);fill-rule:nonzero;"/>
+                    </g>
+                    <g transform="matrix(18,0,0,18,2526.55,1715.71)">
+                    </g>
+                    <text x="2506.76px" y="1715.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">sp<tspan x="2536.45px " y="1715.71px ">i</tspan>te</text>
+                    <text x="2566.14px" y="1715.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:white;">,</text>
+                    <text x="2506.76px" y="1740.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">bone</text>
+                    <text x="2546.34px" y="1740.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:white;">,</text>
+                    <text x="2506.76px" y="1765.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">box</text>
+                    <text x="2536.45px" y="1765.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:white;">,</text>
+                    <text x="2506.76px" y="1790.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">point</text>
+                    <text x="2556.24px" y="1790.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:white;">,</text>
+                    <text x="2506.76px" y="1815.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">sound</text>
+                    <text x="2556.24px" y="1815.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:white;">,</text>
+                    <text x="2506.76px" y="1840.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">entity</text>
+                    <text x="2566.14px" y="1840.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:white;">,</text>
+                    <g transform="matrix(18,0,0,18,2526.55,1865.71)">
+                        <path d="M0.228,-0.49L0.231,-0.411C0.243,-0.425 0.255,-0.438 0.267,-0.448C0.279,-0.459 0.292,-0.469 0.306,-0.476C0.32,-0.484 0.335,-0.489 0.352,-0.493C0.368,-0.497 0.386,-0.499 0.406,-0.499C0.421,-0.499 0.437,-0.498 0.453,-0.497C0.469,-0.495 0.484,-0.493 0.497,-0.49L0.497,-0.407C0.481,-0.412 0.465,-0.416 0.447,-0.419C0.429,-0.422 0.413,-0.424 0.398,-0.424C0.381,-0.424 0.365,-0.422 0.352,-0.418C0.338,-0.415 0.325,-0.409 0.313,-0.401C0.301,-0.393 0.288,-0.383 0.276,-0.37C0.264,-0.358 0.251,-0.343 0.237,-0.325L0.237,-0.069L0.383,-0.069L0.383,-0L0.046,-0L0.046,-0.069L0.151,-0.069L0.151,-0.423L0.046,-0.423L0.046,-0.49L0.228,-0.49Z" style="fill:rgb(104,182,226);fill-rule:nonzero;"/>
+                    </g>
+                    <g transform="matrix(18,0,0,18,2526.55,1865.71)">
+                    </g>
+                    <text x="2506.76px" y="1865.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">va<tspan x="2536.45px " y="1865.71px ">i</tspan>able</text>
+                    <text x="2585.93px" y="1865.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:white;">,</text>
+                    <g transform="matrix(18,0,0,18,2526.55,1890.71)">
+                        <path d="M0.228,-0.49L0.231,-0.411C0.243,-0.425 0.255,-0.438 0.267,-0.448C0.279,-0.459 0.292,-0.469 0.306,-0.476C0.32,-0.484 0.335,-0.489 0.352,-0.493C0.368,-0.497 0.386,-0.499 0.406,-0.499C0.421,-0.499 0.437,-0.498 0.453,-0.497C0.469,-0.495 0.484,-0.493 0.497,-0.49L0.497,-0.407C0.481,-0.412 0.465,-0.416 0.447,-0.419C0.429,-0.422 0.413,-0.424 0.398,-0.424C0.381,-0.424 0.365,-0.422 0.352,-0.418C0.338,-0.415 0.325,-0.409 0.313,-0.401C0.301,-0.393 0.288,-0.383 0.276,-0.37C0.264,-0.358 0.251,-0.343 0.237,-0.325L0.237,-0.069L0.383,-0.069L0.383,-0L0.046,-0L0.046,-0.069L0.151,-0.069L0.151,-0.423L0.046,-0.423L0.046,-0.49L0.228,-0.49Z" style="fill:rgb(104,182,226);fill-rule:nonzero;"/>
+                    </g>
+                    <g transform="matrix(18,0,0,18,2526.55,1890.71)">
+                    </g>
+                    <g transform="matrix(18,0,0,18,2566.14,1890.71)">
+                        <path d="M0.228,-0.49L0.231,-0.411C0.243,-0.425 0.255,-0.438 0.267,-0.448C0.279,-0.459 0.292,-0.469 0.306,-0.476C0.32,-0.484 0.335,-0.489 0.352,-0.493C0.368,-0.497 0.386,-0.499 0.406,-0.499C0.421,-0.499 0.437,-0.498 0.453,-0.497C0.469,-0.495 0.484,-0.493 0.497,-0.49L0.497,-0.407C0.481,-0.412 0.465,-0.416 0.447,-0.419C0.429,-0.422 0.413,-0.424 0.398,-0.424C0.381,-0.424 0.365,-0.422 0.352,-0.418C0.338,-0.415 0.325,-0.409 0.313,-0.401C0.301,-0.393 0.288,-0.383 0.276,-0.37C0.264,-0.358 0.251,-0.343 0.237,-0.325L0.237,-0.069L0.383,-0.069L0.383,-0L0.046,-0L0.046,-0.069L0.151,-0.069L0.151,-0.423L0.046,-0.423L0.046,-0.49L0.228,-0.49Z" style="fill:rgb(104,182,226);fill-rule:nonzero;"/>
+                    </g>
+                    <g transform="matrix(18,0,0,18,2566.14,1890.71)">
+                    </g>
+                    <text x="2506.76px" y="1890.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">sp<tspan x="2536.45px " y="1890.71px ">i</tspan>te<tspan x="2576.03px " y="1890.71px ">E</tspan>vent</text>
+                    <text x="2467.17px" y="1915.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(208,38,207);">}</text>
+                </g>
+                <g transform="matrix(0.530295,0,0,0.472914,130.986,-1.13687e-13)">
+                    <text x="2467.17px" y="1665.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(59,153,205);">public enum</text>
+                    <g transform="matrix(18,0,0,18,2605.72,1665.71)">
+                        <path d="M0.228,-0.49L0.231,-0.411C0.243,-0.425 0.255,-0.438 0.267,-0.448C0.279,-0.459 0.292,-0.469 0.306,-0.476C0.32,-0.484 0.335,-0.489 0.352,-0.493C0.368,-0.497 0.386,-0.499 0.406,-0.499C0.421,-0.499 0.437,-0.498 0.453,-0.497C0.469,-0.495 0.484,-0.493 0.497,-0.49L0.497,-0.407C0.481,-0.412 0.465,-0.416 0.447,-0.419C0.429,-0.422 0.413,-0.424 0.398,-0.424C0.381,-0.424 0.365,-0.422 0.352,-0.418C0.338,-0.415 0.325,-0.409 0.313,-0.401C0.301,-0.393 0.288,-0.383 0.276,-0.37C0.264,-0.358 0.251,-0.343 0.237,-0.325L0.237,-0.069L0.383,-0.069L0.383,-0L0.046,-0L0.046,-0.069L0.151,-0.069L0.151,-0.423L0.046,-0.423L0.046,-0.49L0.228,-0.49Z" style="fill:rgb(82,217,138);fill-rule:nonzero;"/>
+                    </g>
+                    <g transform="matrix(18,0,0,18,2605.72,1665.71)">
+                    </g>
+                    <text x="2585.93px" y="1665.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(82,217,138);">Cu<tspan x="2615.62px " y="1665.71px ">v</tspan>eType</text>
+                    <text x="2467.17px" y="1690.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(208,38,207);">{</text>
+                    <g transform="matrix(18,0,0,18,2556.24,1715.71)">
+                        <path d="M0.228,-0.49L0.231,-0.411C0.243,-0.425 0.255,-0.438 0.267,-0.448C0.279,-0.459 0.292,-0.469 0.306,-0.476C0.32,-0.484 0.335,-0.489 0.352,-0.493C0.368,-0.497 0.386,-0.499 0.406,-0.499C0.421,-0.499 0.437,-0.498 0.453,-0.497C0.469,-0.495 0.484,-0.493 0.497,-0.49L0.497,-0.407C0.481,-0.412 0.465,-0.416 0.447,-0.419C0.429,-0.422 0.413,-0.424 0.398,-0.424C0.381,-0.424 0.365,-0.422 0.352,-0.418C0.338,-0.415 0.325,-0.409 0.313,-0.401C0.301,-0.393 0.288,-0.383 0.276,-0.37C0.264,-0.358 0.251,-0.343 0.237,-0.325L0.237,-0.069L0.383,-0.069L0.383,-0L0.046,-0L0.046,-0.069L0.151,-0.069L0.151,-0.423L0.046,-0.423L0.046,-0.49L0.228,-0.49Z" style="fill:rgb(104,182,226);fill-rule:nonzero;"/>
+                    </g>
+                    <g transform="matrix(18,0,0,18,2556.24,1715.71)">
+                    </g>
+                    <text x="2506.76px" y="1715.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">linea</text>
+                    <text x="2566.14px" y="1715.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:white;">,</text>
+                    <text x="2506.76px" y="1740.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">instant</text>
+                    <text x="2576.03px" y="1740.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:white;">,</text>
+                    <g transform="matrix(18,0,0,18,2546.34,1765.71)">
+                        <path d="M0.228,-0.49L0.231,-0.411C0.243,-0.425 0.255,-0.438 0.267,-0.448C0.279,-0.459 0.292,-0.469 0.306,-0.476C0.32,-0.484 0.335,-0.489 0.352,-0.493C0.368,-0.497 0.386,-0.499 0.406,-0.499C0.421,-0.499 0.437,-0.498 0.453,-0.497C0.469,-0.495 0.484,-0.493 0.497,-0.49L0.497,-0.407C0.481,-0.412 0.465,-0.416 0.447,-0.419C0.429,-0.422 0.413,-0.424 0.398,-0.424C0.381,-0.424 0.365,-0.422 0.352,-0.418C0.338,-0.415 0.325,-0.409 0.313,-0.401C0.301,-0.393 0.288,-0.383 0.276,-0.37C0.264,-0.358 0.251,-0.343 0.237,-0.325L0.237,-0.069L0.383,-0.069L0.383,-0L0.046,-0L0.046,-0.069L0.151,-0.069L0.151,-0.423L0.046,-0.423L0.046,-0.49L0.228,-0.49Z" style="fill:rgb(104,182,226);fill-rule:nonzero;"/>
+                    </g>
+                    <g transform="matrix(18,0,0,18,2546.34,1765.71)">
+                    </g>
+                    <text x="2506.76px" y="1765.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">quad<tspan x="2556.24px " y="1765.71px ">a</tspan>tic</text>
+                    <text x="2595.83px" y="1765.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:white;">,</text>
+                    <text x="2506.76px" y="1790.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">cubic</text>
+                    <text x="2556.24px" y="1790.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:white;">,</text>
+                    <g transform="matrix(18,0,0,18,2536.45,1815.71)">
+                        <path d="M0.228,-0.49L0.231,-0.411C0.243,-0.425 0.255,-0.438 0.267,-0.448C0.279,-0.459 0.292,-0.469 0.306,-0.476C0.32,-0.484 0.335,-0.489 0.352,-0.493C0.368,-0.497 0.386,-0.499 0.406,-0.499C0.421,-0.499 0.437,-0.498 0.453,-0.497C0.469,-0.495 0.484,-0.493 0.497,-0.49L0.497,-0.407C0.481,-0.412 0.465,-0.416 0.447,-0.419C0.429,-0.422 0.413,-0.424 0.398,-0.424C0.381,-0.424 0.365,-0.422 0.352,-0.418C0.338,-0.415 0.325,-0.409 0.313,-0.401C0.301,-0.393 0.288,-0.383 0.276,-0.37C0.264,-0.358 0.251,-0.343 0.237,-0.325L0.237,-0.069L0.383,-0.069L0.383,-0L0.046,-0L0.046,-0.069L0.151,-0.069L0.151,-0.423L0.046,-0.423L0.046,-0.49L0.228,-0.49Z" style="fill:rgb(104,182,226);fill-rule:nonzero;"/>
+                    </g>
+                    <g transform="matrix(18,0,0,18,2536.45,1815.71)">
+                    </g>
+                    <text x="2506.76px" y="1815.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">qua<tspan x="2546.34px " y="1815.71px ">t</tspan>ic</text>
+                    <text x="2576.03px" y="1815.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:white;">,</text>
+                    <text x="2506.76px" y="1840.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">quintic</text>
+                    <text x="2576.03px" y="1840.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:white;">,</text>
+                    <g transform="matrix(18,0,0,18,2556.24,1865.71)">
+                        <path d="M0.228,-0.49L0.231,-0.411C0.243,-0.425 0.255,-0.438 0.267,-0.448C0.279,-0.459 0.292,-0.469 0.306,-0.476C0.32,-0.484 0.335,-0.489 0.352,-0.493C0.368,-0.497 0.386,-0.499 0.406,-0.499C0.421,-0.499 0.437,-0.498 0.453,-0.497C0.469,-0.495 0.484,-0.493 0.497,-0.49L0.497,-0.407C0.481,-0.412 0.465,-0.416 0.447,-0.419C0.429,-0.422 0.413,-0.424 0.398,-0.424C0.381,-0.424 0.365,-0.422 0.352,-0.418C0.338,-0.415 0.325,-0.409 0.313,-0.401C0.301,-0.393 0.288,-0.383 0.276,-0.37C0.264,-0.358 0.251,-0.343 0.237,-0.325L0.237,-0.069L0.383,-0.069L0.383,-0L0.046,-0L0.046,-0.069L0.151,-0.069L0.151,-0.423L0.046,-0.423L0.046,-0.49L0.228,-0.49Z" style="fill:rgb(104,182,226);fill-rule:nonzero;"/>
+                    </g>
+                    <g transform="matrix(18,0,0,18,2556.24,1865.71)">
+                    </g>
+                    <text x="2506.76px" y="1865.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">bezie</text>
+                    <text x="2467.17px" y="1890.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(208,38,207);">}</text>
+                </g>
+                <g transform="matrix(0.530295,0,0,0.472914,254.422,1.13687e-13)">
+                    <text x="2467.17px" y="1665.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(59,153,205);">public enum</text>
+                    <g transform="matrix(18,0,0,18,2605.72,1665.71)">
+                        <path d="M0.228,-0.49L0.231,-0.411C0.243,-0.425 0.255,-0.438 0.267,-0.448C0.279,-0.459 0.292,-0.469 0.306,-0.476C0.32,-0.484 0.335,-0.489 0.352,-0.493C0.368,-0.497 0.386,-0.499 0.406,-0.499C0.421,-0.499 0.437,-0.498 0.453,-0.497C0.469,-0.495 0.484,-0.493 0.497,-0.49L0.497,-0.407C0.481,-0.412 0.465,-0.416 0.447,-0.419C0.429,-0.422 0.413,-0.424 0.398,-0.424C0.381,-0.424 0.365,-0.422 0.352,-0.418C0.338,-0.415 0.325,-0.409 0.313,-0.401C0.301,-0.393 0.288,-0.383 0.276,-0.37C0.264,-0.358 0.251,-0.343 0.237,-0.325L0.237,-0.069L0.383,-0.069L0.383,-0L0.046,-0L0.046,-0.069L0.151,-0.069L0.151,-0.423L0.046,-0.423L0.046,-0.49L0.228,-0.49Z" style="fill:rgb(82,217,138);fill-rule:nonzero;"/>
+                    </g>
+                    <g transform="matrix(18,0,0,18,2605.72,1665.71)">
+                    </g>
+                    <text x="2585.93px" y="1665.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(82,217,138);">Va<tspan x="2615.62px " y="1665.71px ">T</tspan>ype</text>
+                    <text x="2467.17px" y="1690.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(208,38,207);">{</text>
+                    <g transform="matrix(18,0,0,18,2526.55,1715.71)">
+                        <path d="M0.228,-0.49L0.231,-0.411C0.243,-0.425 0.255,-0.438 0.267,-0.448C0.279,-0.459 0.292,-0.469 0.306,-0.476C0.32,-0.484 0.335,-0.489 0.352,-0.493C0.368,-0.497 0.386,-0.499 0.406,-0.499C0.421,-0.499 0.437,-0.498 0.453,-0.497C0.469,-0.495 0.484,-0.493 0.497,-0.49L0.497,-0.407C0.481,-0.412 0.465,-0.416 0.447,-0.419C0.429,-0.422 0.413,-0.424 0.398,-0.424C0.381,-0.424 0.365,-0.422 0.352,-0.418C0.338,-0.415 0.325,-0.409 0.313,-0.401C0.301,-0.393 0.288,-0.383 0.276,-0.37C0.264,-0.358 0.251,-0.343 0.237,-0.325L0.237,-0.069L0.383,-0.069L0.383,-0L0.046,-0L0.046,-0.069L0.151,-0.069L0.151,-0.423L0.046,-0.423L0.046,-0.49L0.228,-0.49Z" style="fill:rgb(104,182,226);fill-rule:nonzero;"/>
+                    </g>
+                    <g transform="matrix(18,0,0,18,2526.55,1715.71)">
+                    </g>
+                    <text x="2506.76px" y="1715.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">St<tspan x="2536.45px " y="1715.71px ">i</tspan>ng</text>
+                    <text x="2566.14px" y="1715.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:white;">,</text>
+                    <text x="2506.76px" y="1740.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">Int</text>
+                    <text x="2536.45px" y="1740.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:white;">,</text>
+                    <text x="2506.76px" y="1765.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(104,182,226);">Float</text>
+                    <text x="2467.17px" y="1790.71px" style="font-family:'Consolas', monospace;font-size:18px;fill:rgb(208,38,207);">}</text>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
