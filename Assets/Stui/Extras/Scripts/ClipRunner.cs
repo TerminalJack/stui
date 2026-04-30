@@ -31,11 +31,18 @@ namespace Stui.Extras
             "cause visual anomalies in some cases.")]
         public bool crossFade = false;
 
+        [Tooltip("Enabling this will force non-looping animation clips to loop.  Otherwise they will play only once.")]
+        public bool _forceLooping = false;
+
         [Tooltip("The order in which to play the clips.")]
         public ClipPlayOrder playOrder = ClipPlayOrder.RandomOrder;
 
         [Tooltip("Drag this around in-scene to move the label.")]
         public Transform labelAnchor;
+
+        [Tooltip("Adjust this while in game mode to find a good setting.  (And then set it again when you exit game mode.)")]
+        [Range(0.05f, 1f)]
+        public float runtimeTextSize = 0.25f;
 
         // Vertical pixel offset above/below the bottom of the prefab for initial placement of the label.
         // A value of -30 means 30px down.  After creation, move the Label Anchor transform to make adjustments.
@@ -100,21 +107,43 @@ namespace Stui.Extras
             {
                 _clipIndex = Mathf.Clamp(_clipIndex, 0, _clips.Count - 1);
 
-                if (crossFade)
-                {
-                    _animator.CrossFade(_clips[_clipIndex].name, 0.3f, 0, 0f);
-                }
-                else
-                {
-                    _animator.Play(_clips[_clipIndex].name, 0, 0f);
-                }
-
-                _animator.Update(0f);
+                PlayCurrentClip();
 
                 yield return new WaitForSeconds(timePerClip);
 
                 _clipIndex = (_clipIndex + 1) % _clips.Count;
             }
+        }
+
+        void Update()
+        {
+            var clip = _clips[_clipIndex];
+
+            if (_forceLooping && clip.wrapMode != WrapMode.Loop)
+            {
+                var state = _animator.GetCurrentAnimatorStateInfo(0);
+
+                if (state.normalizedTime >= 1f)
+                {
+                    PlayCurrentClip();
+                }
+            }
+        }
+
+        private void PlayCurrentClip()
+        {
+            var clip = _clips[_clipIndex];
+
+            if (crossFade)
+            {
+                _animator.CrossFade(clip.name, 0.3f, 0, 0f);
+            }
+            else
+            {
+                _animator.Play(clip.name, 0, 0f);
+            }
+
+            _animator.Update(0f);
         }
 
         private void EnsureLabelAnchorIsCreated()
@@ -228,9 +257,8 @@ namespace Stui.Extras
             Vector3 worldPos = labelAnchor.position;
             Vector3 screenPos = _mainCam.WorldToScreenPoint(worldPos);
 
-            float desiredWorldHeight = 0.8f; // tweak this to taste
             float pixelsPerUnit = Screen.height / (_mainCam.orthographicSize * 2f);
-            int fontSize = Mathf.RoundToInt(pixelsPerUnit * desiredWorldHeight);
+            int fontSize = Mathf.RoundToInt(pixelsPerUnit * runtimeTextSize);
 
             GUIStyle style = new GUIStyle
             {

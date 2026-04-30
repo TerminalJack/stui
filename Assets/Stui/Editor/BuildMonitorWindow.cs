@@ -225,6 +225,10 @@ namespace Stui.Importing
                 {
                     Status(msg);
                 }
+                else if (_task.Current == null)
+                {
+                    break; // Wait for next frame.  Used to let status messages flush.
+                }
             }
 
             _scroll.y = float.MaxValue;

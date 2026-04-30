@@ -168,6 +168,14 @@ namespace Stui.Animations
                         }
                     }
                 }
+            }
+
+            if (pendingTransforms.Count > 0)
+            {
+                if (buildCtx.IsCanceled) { yield break; }
+                yield return $"{buildCtx.MessagePrefix}, hiding all sprite renderers that are not used in this animation";
+
+                yield return null; // Wait for next frame so the display of status messages can catch up.
 
                 foreach (var kvPair in pendingTransforms)
                 {   // Hide all of the remaining sprite renderers.
@@ -218,6 +226,8 @@ namespace Stui.Animations
             if (buildCtx.IsCanceled) { yield break; }
             yield return $"{buildCtx.MessagePrefix}, configuring animation clip";
 
+            yield return null; // Wait for next frame so the display of status messages can catch up.
+
             var settings = AnimationUtility.GetAnimationClipSettings(clip);
             settings.stopTime = animation.length; //Set the animation's length and other settings
 
@@ -231,12 +241,19 @@ namespace Stui.Animations
                 clip.wrapMode = WrapMode.ClampForever;
             }
 
+            if (buildCtx.IsCanceled) { yield break; }
+            yield return $"{buildCtx.MessagePrefix}, setting animation clip settings";
+
+            yield return null; // Wait for next frame so the display of status messages can catch up.
+
             AnimationUtility.SetAnimationClipSettings(clip, settings);
 
             if (OriginalClips.ContainsKey(animation.name))
             {   // If the clip already exists, copy this clip into the old one
                 if (buildCtx.IsCanceled) { yield break; }
                 yield return $"{buildCtx.MessagePrefix}, overwriting animation clip";
+
+                yield return null; // Wait for next frame so the display of status messages can catch up.
 
                 var oldClip = OriginalClips[animation.name];
                 var cachedEvents = AnimationUtility.GetAnimationEvents(oldClip).ToList();
@@ -263,6 +280,8 @@ namespace Stui.Animations
                         if (buildCtx.IsCanceled) { yield break; }
                         yield return $"{buildCtx.MessagePrefix}, adding animation clip to prefab";
 
+                        yield return null; // Wait for next frame so the display of status messages can catch up.
+
                         AssetDatabase.AddObjectToAsset(clip, PrefabPath);
                         break;
 
@@ -279,6 +298,8 @@ namespace Stui.Animations
 
                         if (buildCtx.IsCanceled) { yield break; }
                         yield return $"{buildCtx.MessagePrefix}, writing animation clip to file '{animPath}'";
+
+                        yield return null; // Wait for next frame so the display of status messages can catch up.
 
                         AssetDatabase.CreateAsset(clip, animPath);
                         break;
@@ -864,7 +885,7 @@ namespace Stui.Animations
                 }
             }
 
-            if (timeLine.keys[timeLine.keys.Count - 1].time_s != animation.length)
+            if (timeLine.keys[timeLine.keys.Count - 1].time_s != animation.length && !WillNeedWrapAroundCurves(animation, timeLine))
             {   // Create a temporary key for the last frame with the appropriate value.  This temporary key will need
                 // to be removed once the rotation curve is created.  It will interfere with the other curves otherwise.
                 float prevAngle = timeLine.keys[timeLine.keys.Count - 1].info.angle;
@@ -881,6 +902,25 @@ namespace Stui.Animations
             }
 
             return false;
+        }
+
+        private bool WillNeedWrapAroundCurves(Animation animation, Timeline timeline)
+        {
+            // If an animation is looping but there isn't a key in the timeline at time 0 then animation curves will
+            // need to be created at the end of the timeline and beginning of the timeline.  The curves will join the
+            // last key of the timeline with the first with the last timeline key controlling the curve type.
+
+            bool result =
+                animation.looping
+                && timeline.keys.Count > 1
+                && timeline.keys[0].time_s != 0f
+                && (
+                    timeline.objectType == ObjectType.bone
+                        ? animation.mainlineKeys[0].boneRefs.Exists(k => k.timelineId == timeline.id)
+                        : animation.mainlineKeys[0].objectRefs.Exists(k => k.timelineId == timeline.id)
+                );
+
+            return result;
         }
 
         /// <summary>
@@ -1044,6 +1084,89 @@ namespace Stui.Animations
             }
         }
 
+        private void SplitCurve(AnimationCurve sourceCurve, float splitTime, out AnimationCurve leftCurve, out AnimationCurve rightCurve)
+        {
+            float value = sourceCurve.Evaluate(splitTime);
+
+            // Compute tangents
+            const float eps = 1e-4f;
+            float prevValue = sourceCurve.Evaluate(splitTime - eps);
+            float nextValue = sourceCurve.Evaluate(splitTime + eps);
+
+            float tangent = (nextValue - prevValue) / (2f * eps);
+
+            // Create a key at the split time with correct tangents
+            Keyframe splitKey = new Keyframe(splitTime, value, tangent, tangent);
+
+            // Build a temporary curve including the split key
+            AnimationCurve tempCurve = new AnimationCurve(sourceCurve.keys);
+            tempCurve.AddKey(splitKey);
+
+            leftCurve = new AnimationCurve();
+            rightCurve = new AnimationCurve();
+
+            foreach (var keyFrame in tempCurve.keys)
+            {
+                if (Mathf.Approximately(keyFrame.time, splitTime))
+                {
+                    leftCurve.AddKey(keyFrame);
+                    rightCurve.AddKey(keyFrame);
+                }
+                else if (keyFrame.time < splitTime)
+                {
+                    leftCurve.AddKey(keyFrame);
+                }
+                else
+                {
+                    rightCurve.AddKey(keyFrame);
+                }
+            }
+        }
+
+        private void GenerateWrapAroundCurves<T>(Animation animation, Timeline timeline, Func<T, float> infoValue,
+            out AnimationCurve beginningCurve, out AnimationCurve endingCurve) where T : SpatialInfo
+        {
+            var lastKey = timeline.keys[timeline.keys.Count - 1];
+            var firstKey = timeline.keys[0];
+
+            float startTime = lastKey.time_s;
+            float endTime = animation.length + firstKey.time_s;
+
+            float startValue = infoValue(lastKey.info as T);
+            float endValue = infoValue(firstKey.info as T);
+
+            AnimationCurve joiningCurve = CreateCurve(lastKey.curve_type, startTime, endTime, startValue, endValue,
+                lastKey.c1, lastKey.c2, lastKey.c3, lastKey.c4);
+
+            AnimationCurve leftSideCurve;
+            AnimationCurve rightSideCurve;
+
+            SplitCurve(joiningCurve, animation.length, out leftSideCurve, out rightSideCurve);
+
+            AnimationCurve startCurve = new AnimationCurve();
+
+            // The right-hand side curve will be the first part of the timeline.  Adjust the keyframe times and
+            // preserve all of the weights and tangents...
+            foreach (var key in rightSideCurve.keys)
+            {
+                float newTime = key.time - animation.length;
+
+                int index = startCurve.AddKey(newTime, key.value);
+
+                var k = startCurve.keys[index];
+                k.inTangent   = key.inTangent;
+                k.outTangent  = key.outTangent;
+                k.inWeight    = key.inWeight;
+                k.outWeight   = key.outWeight;
+                k.weightedMode = key.weightedMode;
+
+                startCurve.MoveKey(index, k);
+            }
+
+            beginningCurve = startCurve;
+            endingCurve = leftSideCurve;
+        }
+
         private void DoSetKeys<T>(AnimationCurve curve, Timeline timeLine, Func<T, float> infoValue,
             Animation animation, CurveType overrideCurveType = CurveType.linear) where T : SpatialInfo
         {
@@ -1075,6 +1198,21 @@ namespace Stui.Animations
                 allCurves.Add(CreateCurve(curve_type, startTime, endTime, startValue, endValue, key.c1, key.c2, key.c3, key.c4));
             }
 
+            if (WillNeedWrapAroundCurves(animation, timeLine))
+            {
+                // A key doesn't exist for time 0 but it should so we will take care of it as well as regenerate the
+                // curve for the last key here.  In this case, the animation loops so the curve needs to tween between
+                // the last key of the timeline and the first key (which in this case will have a time other than 0.)
+
+                AnimationCurve beginningCurve;
+                AnimationCurve endingCurve;
+
+                GenerateWrapAroundCurves(animation, timeLine, infoValue, out beginningCurve, out endingCurve);
+
+                allCurves.Insert(0, beginningCurve);
+                allCurves[allCurves.Count - 1] = endingCurve;
+            }
+
             CurveBuilder.ConcatenateCurvesInto(curve, allCurves.ToArray());
         }
 
@@ -1096,10 +1234,10 @@ namespace Stui.Animations
             }
             else if (animation.looping && firstKey.time_s == 0f)
             {
-                endValue = infoValue(timeLine.keys[0].info as T);
+                endValue = infoValue(firstKey.info as T);
             }
             else
-            {
+            {   // If it turns out that a key needs to be created at time 0 then this value will be adjusted.
                 endValue = infoValue(lastKey.info as T);
             }
 
@@ -1146,10 +1284,10 @@ namespace Stui.Animations
 
                     allCurves.Add(mainlineCurve);
                 }
-                else
+                else if (tlk != null)
                 {   // Note: The code here will likely be rarely used for real world Spriter animations.
 
-                    // tlk (set above) and nextTlk are the two timeline keys that bracket the mainline key, mlk.  It may be null.
+                    // tlk (set above) and nextTlk are the two timeline keys that bracket the mainline key, mlk.  nextTlk may be null.
                     var nextTlk = timeLine.keys.FirstOrDefault(k => k.time_s > mlk.time_s);
 
                     float mlkStartTime = mlk.time_s;
