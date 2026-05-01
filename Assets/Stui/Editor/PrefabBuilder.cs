@@ -799,6 +799,22 @@ namespace Stui.Prefabs
                         child.localRotation = Quaternion.Euler(0, 0, spatialInfo.angle);
                         child.localScale = new Vector3(spatialInfo.scale_x, spatialInfo.scale_y, 1f);
 
+                        var alphaController = child.gameObject.GetComponent<AlphaController>();
+
+                        if (spriterBoneInfo.hasBoneAlpha)
+                        {
+                            if (alphaController == null)
+                            {
+                                alphaController = child.gameObject.AddComponent<AlphaController>();
+                            }
+
+                            alphaController.Alpha = spatialInfo.a;
+                        }
+                        else if (alphaController != null)
+                        {
+                            DestroyImmediate(alphaController);
+                        }
+
                         ProcessObjectScopedMetadata(child, spriterBoneInfo);
                     }
                     else
@@ -920,6 +936,25 @@ namespace Stui.Prefabs
 
                 var spriteVisibility = rendererTransform.GetOrAddComponent<SpriteVisibility>();
 
+                // An Alpha Controller component will need to be added if any of this sprite's parent bones use alpha.
+                bool needsAlphaController = DoesSpriteNeedAlphaController(timeLine.name, transforms, entityInfo);
+
+                var alphaController = child.GetComponent<AlphaController>();
+
+                if (needsAlphaController)
+                {
+                    if (alphaController == null)
+                    {
+                        alphaController = child.gameObject.AddComponent<AlphaController>();
+                    }
+
+                    alphaController.Alpha = spriteInfo.a;
+                }
+                else if (alphaController != null)
+                {
+                    DestroyImmediate(alphaController);
+                }
+
                 // Disable the Sprite Renderer if this isn't the first frame of the first animation
                 renderer.enabled = firstAnim;
                 spriteVisibility.isVisible = firstAnim;
@@ -975,6 +1010,54 @@ namespace Stui.Prefabs
 
                 ProcessObjectScopedMetadata(child, spriterObjectInfo);
             }
+        }
+
+        private bool BoneUsesAlpha(string boneName, Dictionary<string, Transform> transforms,
+            SpriterEntityInfo entityInfo, int depth)
+        {
+            if (++depth > 100)
+            {
+                return false; // Guard against cycles.
+            }
+
+            var boneInfo = entityInfo.boneInfo.GetOrDefault(boneName);
+
+            if (boneInfo != null)
+            {
+                if (boneInfo.hasBoneAlpha)
+                {
+                    return true;
+                }
+                else
+                {
+                    foreach (var parentName in boneInfo.parentBoneNames)
+                    {
+                        if (BoneUsesAlpha(parentName, transforms, entityInfo, depth))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private bool DoesSpriteNeedAlphaController(string spriteTimelineName, Dictionary<string, Transform> transforms,
+            SpriterEntityInfo entityInfo)
+        {
+            var spriteInfo = entityInfo.objectInfo.GetOrDefault(spriteTimelineName);
+
+            // If this sprite has any parents using bone alpha then it will need an alpha controller.
+            foreach (var parentName in spriteInfo?.parentBoneNames)
+            {
+                if (BoneUsesAlpha(parentName, transforms, entityInfo, depth: 0))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void ProcessVirtualParent(string parentName, ref Transform parentTransform,

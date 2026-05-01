@@ -23,6 +23,7 @@ namespace Stui.Animations
 {
     using Importing;
     using EntityInfo;
+    using Stui.Extensions;
 
     public class AnimationBuilder : UnityEngine.Object
     {
@@ -822,12 +823,30 @@ namespace Stui.Animations
                         {
                             SetKeys<SpatialInfo>(kvPair.Value, timeLine, x => x.a, animation);
 
-                            // The SpriteRenderer is on this game object or a child.
-                            var rendererTransform = child.GetComponentInChildren<SpriteRenderer>(includeInactive: true).transform;
-                            var rendererTransformPath = GetPathToChild(rendererTransform);
-                            var rendererBinding = EditorCurveBinding.FloatCurve(rendererTransformPath, typeof(SpriteRenderer), "m_Color.a");
+                            var alphaController = child.GetComponent<AlphaController>();
 
-                            AnimationUtility.SetEditorCurve(clip, rendererBinding, kvPair.Value);
+                            if (alphaController != null)
+                            {
+                                var alphaControllerTransform = alphaController.transform;
+                                var alphaControllerTransformPath = GetPathToChild(alphaControllerTransform);
+                                var alphaBinding = EditorCurveBinding.FloatCurve(alphaControllerTransformPath,
+                                    typeof(AlphaController), nameof(AlphaController.Alpha));
+
+                                AnimationUtility.SetEditorCurve(clip, alphaBinding, kvPair.Value);
+                            }
+                            else if (entityInfo.boneInfo.GetOrDefault(timeLine.name) == null) // Make sure it's not a bone.
+                            {
+                                // The SpriteRenderer is on this game object or a child.
+                                var rendererTransform = child.GetComponentInChildren<SpriteRenderer>(includeInactive: true).transform;
+                                var rendererTransformPath = GetPathToChild(rendererTransform);
+                                var rendererBinding = EditorCurveBinding.FloatCurve(rendererTransformPath, typeof(SpriteRenderer), "m_Color.a");
+
+                                AnimationUtility.SetEditorCurve(clip, rendererBinding, kvPair.Value);
+                            }
+                            else
+                            {
+                                Debug.LogWarning($"An Alpha Controller component didn't get created for bone '{timeLine.name}'");
+                            }
                         }
                         break;
 

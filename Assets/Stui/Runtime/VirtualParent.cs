@@ -22,6 +22,11 @@ namespace Stui
             "An invalid index will use the component's actual parent.")]
         public int parentIndex = -1;
 
+        [HideInInspector] public int version => _version;
+
+        private int _version = 1;
+        private int _lastParentIndex = -1;
+
         void OnEnable() => ApplyVirtualParent();
         void OnValidate() => ApplyVirtualParent();
         void OnDidApplyAnimationProperties() => ApplyVirtualParent();
@@ -30,6 +35,11 @@ namespace Stui
 
         void ApplyVirtualParent()
         {
+            if (parentIndex != _lastParentIndex)
+            {
+                _version++;
+            }
+
             if (parentIndex < 0 ||
                 parentIndex >= possibleParents.Count ||
                 possibleParents[parentIndex] == null ||

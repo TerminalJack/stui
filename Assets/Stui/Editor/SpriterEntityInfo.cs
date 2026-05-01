@@ -37,11 +37,11 @@ namespace Stui.EntityInfo
         public string name;
         public ObjectType type;
 
-        public bool hasVirtualParent;
+        public bool hasVirtualParent { get { return parentBoneNames.Count > 1; }}
         public string virtualParentTransformName; // Set even if there isn't one so ones from prior imports can be found.
         public Transform virtualParentTransform; // The transform where the VirtualParent component is.
 
-        public List<string> parentBoneNames = new List<string>(); // Empty if there aren't any.
+        public List<string> parentBoneNames = new List<string>();
 
         // This is the object-scoped and event-scoped metadata.  The key for these is the id.
         public Dictionary<int, VarInstanceInfo> varInstanceInfos = new Dictionary<int, VarInstanceInfo>(); // Empty if there aren't any variables for this object.
@@ -80,6 +80,8 @@ namespace Stui.EntityInfo
             : base(_name, _type)
         {
         }
+
+        public bool hasBoneAlpha;
     }
 
     // This class is used for tracking information that spans across all of an entity's animations.
@@ -136,10 +138,6 @@ namespace Stui.EntityInfo
             yield return $"{buildCtx.MessagePrefix}, checking for animated bone scales";
             CheckForAnimatedBoneScales(entity);
 
-            if (buildCtx.IsCanceled) { yield break; }
-            yield return $"{buildCtx.MessagePrefix}, checking for animated bone alphas";
-            CheckForAnimatedBoneAlphas(entity);
-
             LogProjectScopedTagInfo(scmlObject); // The log messages will only be seen when debug logging is enabled.
 
             if (buildCtx.IsCanceled) { yield break; }
@@ -191,16 +189,20 @@ namespace Stui.EntityInfo
             PreprocessUnsupportTypes(entity); // Warns of unsupported types.  Puts them in objectInfo collection.
 
             if (buildCtx.IsCanceled) { yield break; }
+            yield return $"{buildCtx.MessagePrefix}, checking for bones that use alpha";
+            CheckForBoneAlphaUse(entity);
+
+            if (buildCtx.IsCanceled) { yield break; }
             yield return $"{buildCtx.MessagePrefix}, preprocessing pivot points";
             PreprocessSpritePivots(entity, fileInfo);
 
             if (buildCtx.IsCanceled) { yield break; }
-            yield return $"{buildCtx.MessagePrefix}, preprocessing bones with multiple parents";
-            PreprocessBonesWithMultipleParents(entity);
+            yield return $"{buildCtx.MessagePrefix}, preprocessing bone parents";
+            PreprocessBoneParents(entity);
 
             if (buildCtx.IsCanceled) { yield break; }
-            yield return $"{buildCtx.MessagePrefix}, preprocessing objects with multiple parents";
-            PreprocessObjectsWithMultipleParents(entity);
+            yield return $"{buildCtx.MessagePrefix}, preprocessing object parents";
+            PreprocessObjectParents(entity);
 
             if (buildCtx.IsCanceled) { yield break; }
             yield return $"{buildCtx.MessagePrefix}, preprocessing z-indices";
@@ -459,93 +461,31 @@ namespace Stui.EntityInfo
             }
         }
 
-        private void CheckForAnimatedBoneAlphas(Entity entity)
+        private void CheckForBoneAlphaUse(Entity entity)
         {
-            var boneAlphaInfo =
+            var boneAlphaInfos =
                 (from anim in entity.animations
                  from mlk in anim.mainlineKeys
                  from boneRef in mlk.boneRefs
                  let boneTimeline = anim.timelines.FirstOrDefault(t => t.id == boneRef.timelineId)
                  let boneName = boneTimeline?.name ?? "Unknown"
                  from tlk in boneTimeline.keys
-                 let alpha = System.Math.Round(tlk.info.a, 4)
-                 select new
-                 {
-                     animName = anim.name,
-                     animLength = anim.length,
-                     boneName,
-                     timeline = boneTimeline,
-                     alpha,
-                 })
+                 where tlk.info.a < 1f
+                 select boneName)
                 .Distinct()
-                .GroupBy(x => new { x.animName, x.animLength, x.boneName, x.timeline })
-                .Where(g => g.Select(x => x.alpha).Distinct().Count() > 1)
-                .Select(g => new
-                {
-                    g.Key.animName,
-                    g.Key.animLength,
-                    g.Key.boneName,
-                    g.Key.timeline,
-                    alphas = g.Select(x => x.alpha).Distinct().ToList()
-                })
-                .OrderBy(x => x.animName).ThenBy(x => x.boneName)
+                .OrderBy(bn => bn)
                 .ToList();
 
-            // Remove all items that aren't really animated bone alphas but pivot/parent changes.
-            boneAlphaInfo.RemoveAll(item =>
+            if (boneAlphaInfos.Count > 0)
             {
-                var tlks = item.timeline.keys.ToList();
-
-                if (tlks.Count >= 3 && tlks[0].time_s == tlks[1].time_s)
-                {   // The first two keys have the same time so this is a pivot and/or parent change.  Put a copy of the
-                    // key that is at index 0 at the end of the keys and remove it.
-                    var first = tlks[0].Clone();
-                    first.time_s = item.animLength + 1f;
-
-                    tlks.RemoveAt(0);
-                    tlks.Add(first);
-                }
-
-                // Check each of the spans between pivot/parent changes and make sure the alphas are the same for all
-                // of the keys in the span.  A new span starts when two keys are found with the same time.  This will
-                // be a pivot and/or parent change.
-                bool newSpan = true;
-
-                for (int i = 1; i < tlks.Count; ++i)
-                {
-                    var prevKey = tlks[i - 1];
-                    var thisKey = tlks[i];
-
-                    double prevKeyTime = System.Math.Round(prevKey.time_s, 4);
-                    double thisKeyTime = System.Math.Round(thisKey.time_s, 4);
-
-                    newSpan = prevKeyTime == thisKeyTime;
-
-                    if (!newSpan && prevKey.info.a != thisKey.info.a)
-                    {
-                        return false; // This timeline has animated bone alphas.
-                    }
-                }
-
-                return true; // This timeline does NOT have animated bone alphas.
-            });
-
-            if (boneAlphaInfo.Count > 0)
-            {
-                Debug.LogWarning($"Entity '{entity.name}' has one or more bones with animated alphas.  " +
-                    "Animated bone alphas are not supported by the importer.  The animation(s) may not match " +
-                    "Spriter's playback.  Information regarding this follows:");
+                Log($"Entity '{entity.name}' has the following bones that are using alpha:");
             }
 
-            foreach (var boneInfo in boneAlphaInfo)
+            foreach (var boneName in boneAlphaInfos)
             {
-                Debug.LogWarning($"    Animation '{boneInfo.animName}', bone name '{boneInfo.boneName}' has one or " +
-                    "more keys with the following (different) alphas:");
+                Log($"    bone name: '{boneName}'");
 
-                foreach (var boneAlpha in boneInfo.alphas)
-                {
-                    Debug.LogWarning($"        alpha: {boneAlpha}");
-                }
+                boneInfo[boneName].hasBoneAlpha = true;
             }
         }
 
@@ -1481,10 +1421,9 @@ namespace Stui.EntityInfo
             }
         }
 
-        private void PreprocessBonesWithMultipleParents(Entity entity)
+        private void PreprocessBoneParents(Entity entity)
         {
-            // Find all of the bones that have more than one parent...
-            var bonesWithMultipleParents =
+            var boneNamesAndTheirParentNames =
                 (from anim in entity.animations
                  from mlk in anim.mainlineKeys
                  from boneRef in mlk.boneRefs
@@ -1501,7 +1440,6 @@ namespace Stui.EntityInfo
                  })
                 .Distinct()
                 .GroupBy(x => x.boneName)
-                .Where(g => g.Select(x => x.parentBoneName).Distinct().Count() > 1)
                 .Select(g => new
                 {
                     BoneName = g.Key,
@@ -1510,29 +1448,28 @@ namespace Stui.EntityInfo
                 .OrderBy(x => x.BoneName)
                 .ToList();
 
-            if (bonesWithMultipleParents.Count > 0)
+            bool hasBonesWithMultipleParents = boneNamesAndTheirParentNames.Exists(bi => bi.ParentBoneNames.Count > 1);
+
+            if (hasBonesWithMultipleParents)
             {
-                Log($"For entity '{entity.name}', the following bones have more than one parent and will need a virtual parent.");
+                Log($"For entity '{entity.name}', some bones have more than one parent and will need a virtual parent.");
             }
 
-            foreach (var info in bonesWithMultipleParents)
+            Log($"Entity '{entity.name}', list of bones and their parent(s):");
+
+            foreach (var info in boneNamesAndTheirParentNames)
             {
-                Log($"    bone name: '{info.BoneName}', parent names are:");
+                var parentNamesString = string.Join(", ", info.ParentBoneNames.Select(s => $"'{s}'"));
 
-                foreach (var parentName in info.ParentBoneNames)
-                {
-                    Log($"        '{parentName}'");
-                }
+                Log($"    bone name: '{info.BoneName}', parent name(s) are: {parentNamesString}");
 
-                boneInfo[info.BoneName].hasVirtualParent = true;
                 boneInfo[info.BoneName].parentBoneNames.AddRange(info.ParentBoneNames);
             }
         }
 
-        private void PreprocessObjectsWithMultipleParents(Entity entity)
+        private void PreprocessObjectParents(Entity entity)
         {
-            // Find all of the objects that have more than one parent...
-            var objectsWithMultipleParents =
+            var objectNamesAndTheirParentNames =
                 (from anim in entity.animations
                  from mlk in anim.mainlineKeys
                  from objectRef in mlk.objectRefs
@@ -1549,7 +1486,6 @@ namespace Stui.EntityInfo
                  })
                 .Distinct()
                 .GroupBy(x => x.objectName)
-                .Where(g => g.Select(x => x.parentBoneName).Distinct().Count() > 1)
                 .Select(g => new
                 {
                     ObjectName = g.Key,
@@ -1558,21 +1494,21 @@ namespace Stui.EntityInfo
                 .OrderBy(x => x.ObjectName)
                 .ToList();
 
-            if (objectsWithMultipleParents.Count > 0)
+            bool hasObjectsWithMultipleParents = objectNamesAndTheirParentNames.Exists(bi => bi.ParentBoneNames.Count > 1);
+
+            if (hasObjectsWithMultipleParents)
             {
-                Log($"For entity '{entity.name}', the following objects have more than one parent and will need a virtual parent.");
+                Log($"For entity '{entity.name}', some objects have more than one parent and will need a virtual parent.");
             }
 
-            foreach (var info in objectsWithMultipleParents)
+            Log($"Entity '{entity.name}', list of objects and their parent(s):");
+
+            foreach (var info in objectNamesAndTheirParentNames)
             {
-                Log($"    object name: '{info.ObjectName}', parent names are:");
+                var parentNamesString = string.Join(", ", info.ParentBoneNames.Select(s => $"'{s}'"));
 
-                foreach (var parentName in info.ParentBoneNames)
-                {
-                    Log($"        '{parentName}'");
-                }
+                Log($"    object name: '{info.ObjectName}', parent name(s) are: {parentNamesString}");
 
-                objectInfo[info.ObjectName].hasVirtualParent = true;
                 objectInfo[info.ObjectName].parentBoneNames.AddRange(info.ParentBoneNames);
             }
         }

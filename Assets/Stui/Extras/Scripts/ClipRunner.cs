@@ -37,6 +37,9 @@ namespace Stui.Extras
         [Tooltip("The order in which to play the clips.")]
         public ClipPlayOrder playOrder = ClipPlayOrder.RandomOrder;
 
+        [Tooltip("The labels will cause garbage to be created each frame so disabling them during profiling and such can be useful.")]
+        public bool showLabel = true;
+
         [Tooltip("Drag this around in-scene to move the label.")]
         public Transform labelAnchor;
 
@@ -223,7 +226,7 @@ namespace Stui.Extras
 #if UNITY_EDITOR
         private void OnDrawGizmos()
         {
-            if (!Application.isPlaying && labelAnchor != null)
+            if (!Application.isPlaying && labelAnchor != null && showLabel)
             {
                 GUIStyle style = new GUIStyle
                 {
@@ -240,7 +243,7 @@ namespace Stui.Extras
 
         private void OnGUI()
         {
-            if (_clips != null && _clips.Count > 0 && _clipIndex < _clips.Count)
+            if (showLabel && _clips != null && _clips.Count > 0 && _clipIndex < _clips.Count)
             {
                 string labelText = $"{_clips[_clipIndex].name}  [{_clipIndex + 1} of {_clips.Count}]";
                 SetLabelText(labelText);

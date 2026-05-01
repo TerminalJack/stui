@@ -106,6 +106,7 @@ The importer currently supports the following Spriter features:
 * **Event triggers.**  Events are user-defined actions (that is, your code) that run at a specific point in time during an animation.  These are imported as Unity animation events.  You can subscribe to these events either at design time via the inspector and/or you can subscribe to them at runtime via an API.  Stay tuned for more information regarding this feature.
 * **Variables.**  Spriter allows the animator to create animation curves for arbitrary, non-visual data.  These animation curves can then be used at runtime by the game designer for information that needs to be in-sync with the animations.  All of Spriter's variable types are supported by Stui: `float`s, `int`s and `string`s.  Stay tuned for more information regarding this feature.
 * **Tags.** Spriter tags are a simple way of indicating that the entity is, or is not, in a particular state.  Spriter allows you to define as many tags as you need.  A tag is either active or not and this can be determined at runtime by the game designer.  Stay tuned for more information regarding this feature.
+* **Bone alpha.**  Spriter allows a *bone's* transparency (aka alpha) to be animated (or just have a value other than 1.)  This affects the sprites that are children of the bone.  In practce, it doesn't look very good due to all of the overlapping sprites but the feature is supported by the importer should you need it.
 
 ## Unsupported Spriter Features.
 
@@ -115,8 +116,8 @@ The following Spriter features are not supported at this time:
 * **SCON files.**  SCON files are an alternative to SCML files.  Stui works only with SCML files.  Spriter can easily convert a SCON file into a SCML file with its **File** | **Save As** feature.
 * **Sub-entities.**  Basically animations within animations.
 * **Texture Packer atlases.**  Stui works great with Unity's sprite atlases.  You are encouraged to use them instead.
-* **Bone alpha.**  Spriter allows a *bone's* transparency (aka alpha) to be animated.  This affects the sprites that are children of the bone.  In practce, it doesn't look very good due to all of the overlapping sprites.
 * **Animated bone scales.**  Strictly speaking, the importer supports a bone changing its scale.  It will not *tween* (i.e. animate) a bone's scale, however.
+* **Pixel art Spriter projects.**  Spriter supports a special mode for pixel art.  The importer doesn't support these types of Spriter projects.
 
 ## Import Options.
 
