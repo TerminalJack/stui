@@ -356,8 +356,7 @@ namespace Stui.Animations
         private void AddSoundEventsToClip(Animation animation, AnimationClip clip)
         {
             // Add any animation events for Spriter sounds to the clip.
-            var soundController = Root.GetComponent<SoundController>();
-            if (soundController)
+            if (Root.TryGetComponent<SoundController>(out var soundController))
             {
                 var animEvents = AnimationUtility.GetAnimationEvents(clip).ToList();
 
@@ -495,13 +494,20 @@ namespace Stui.Animations
                         tagCurve.AddKey(new Keyframe(0f, 0f)); // Value of 0 at time 0.
                     }
 
-                    var spriterTagComponent = tagInstanceInfo.gameObject.GetComponent<SpriterTag>();
-                    var spriterTagTransform = spriterTagComponent.transform;
-                    var spriterTagTransformPath = GetPathToChild(spriterTagTransform);
-                    var spriterTagBinding = EditorCurveBinding.FloatCurve(spriterTagTransformPath,
-                        typeof(SpriterTag), nameof(SpriterTag.IsActive));
+                    if (tagInstanceInfo.gameObject.TryGetComponent<SpriterTag>(out var spriterTagComponent))
+                    {
+                        var spriterTagTransform = spriterTagComponent.transform;
+                        var spriterTagTransformPath = GetPathToChild(spriterTagTransform);
+                        var spriterTagBinding = EditorCurveBinding.FloatCurve(spriterTagTransformPath,
+                            typeof(SpriterTag), nameof(SpriterTag.IsActive));
 
-                    AnimationUtility.SetEditorCurve(clip, spriterTagBinding, tagCurve);
+                        AnimationUtility.SetEditorCurve(clip, spriterTagBinding, tagCurve);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("A Spriter Tag component wasn't found on the " +
+                            $"'{tagInstanceInfo.gameObject.name}' game object.");
+                    }
                 }
             }
         }
@@ -579,13 +585,20 @@ namespace Stui.Animations
 
         private EditorCurveBinding GetSpriterVarComponentBinding<T>(GameObject gameObject, string propertyName) where T : MonoBehaviour
         {
-            var spriterVarComponent = gameObject.GetComponent<T>();
-            var spriterVarTransform = spriterVarComponent.transform;
-            var spriterVarTransformPath = GetPathToChild(spriterVarTransform);
+            if (gameObject.TryGetComponent<T>(out var spriterVarComponent ))
+            {
+                var spriterVarTransform = spriterVarComponent.transform;
+                var spriterVarTransformPath = GetPathToChild(spriterVarTransform);
 
-            var spriterVarBinding = EditorCurveBinding.FloatCurve(spriterVarTransformPath, typeof(T), propertyName);
+                var spriterVarBinding = EditorCurveBinding.FloatCurve(spriterVarTransformPath, typeof(T), propertyName);
 
-            return spriterVarBinding;
+                return spriterVarBinding;
+            }
+            else
+            {
+                throw new Exception($"A Spriter Variable component of type {nameof(T)} wasn't found on the " +
+                            $"'{gameObject.name}' game object.");
+            }
         }
 
         private void CreateVariableCurves(Animation animation, AnimationClip clip, List<VarInstanceInfo> varInstanceInfos, Metadata metadata)
@@ -619,33 +632,40 @@ namespace Stui.Animations
                         varCurve.AddKey(new Keyframe(0f, varValueAsFloat)); // Variable's default value at time 0.
                     }
 
-                    EditorCurveBinding varComponentBinding = new EditorCurveBinding();
-
-                    switch (varDef.type)
+                    try
                     {
-                        case VarType.Float:
-                            varComponentBinding = GetSpriterVarComponentBinding<SpriterFloat>(
-                                varInstanceInfo.gameObject,
-                                nameof(SpriterFloat.Value));
-                            break;
+                        EditorCurveBinding varComponentBinding = new EditorCurveBinding();
 
-                        case VarType.Int:
-                            varComponentBinding = GetSpriterVarComponentBinding<SpriterInt>(
-                                varInstanceInfo.gameObject,
-                                nameof(SpriterInt.Value));
-                            break;
+                        switch (varDef.type)
+                        {
+                            case VarType.Float:
+                                varComponentBinding = GetSpriterVarComponentBinding<SpriterFloat>(
+                                    varInstanceInfo.gameObject,
+                                    nameof(SpriterFloat.Value));
+                                break;
 
-                        case VarType.String:
-                            varComponentBinding = GetSpriterVarComponentBinding<SpriterString>(
-                                varInstanceInfo.gameObject,
-                                nameof(SpriterString.ValueIndex));
-                            break;
+                            case VarType.Int:
+                                varComponentBinding = GetSpriterVarComponentBinding<SpriterInt>(
+                                    varInstanceInfo.gameObject,
+                                    nameof(SpriterInt.Value));
+                                break;
 
-                        default:
-                            break;
+                            case VarType.String:
+                                varComponentBinding = GetSpriterVarComponentBinding<SpriterString>(
+                                    varInstanceInfo.gameObject,
+                                    nameof(SpriterString.ValueIndex));
+                                break;
+
+                            default:
+                                break;
+                        }
+
+                        AnimationUtility.SetEditorCurve(clip, varComponentBinding, varCurve);
                     }
-
-                    AnimationUtility.SetEditorCurve(clip, varComponentBinding, varCurve);
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning(ex.Message);
+                    }
                 }
             }
         }
@@ -666,12 +686,12 @@ namespace Stui.Animations
                 entityInfo.objectInfo.Values
                 .Where(i => i.type == ObjectType.spriterEvent && i.HasTags);
 
-                foreach (var info in allEventInfosWithTags)
-                {
-                    var metadata = animation.eventlines?.FirstOrDefault(el => el.name == info.name)?.metadata;
+            foreach (var info in allEventInfosWithTags)
+            {
+                var metadata = animation.eventlines?.FirstOrDefault(el => el.name == info.name)?.metadata;
 
-                    CreateTagCurves(animation, clip, info.tagInstanceInfos.Values.ToList(), metadata);
-                }
+                CreateTagCurves(animation, clip, info.tagInstanceInfos.Values.ToList(), metadata);
+            }
         }
 
         private void AddEventScopedVariablesToClip(Animation animation, AnimationClip clip)
@@ -809,13 +829,20 @@ namespace Stui.Animations
                             SetVirtualParentKeys(kvPair.Value, timeLine, x => x.parentBoneName, animation, child.name);
 
                             // The VirtualParent is on this game object's parent.
-                            var virtualParentComponent = child.parent.GetComponent<VirtualParent>();
-                            var virtualParentTransform = virtualParentComponent.transform;
-                            var virtualParentTransformPath = GetPathToChild(virtualParentTransform);
-                            var virtualParentBinding = EditorCurveBinding.FloatCurve(virtualParentTransformPath,
-                                typeof(VirtualParent), nameof(VirtualParent.parentIndex));
+                            if (child.parent.TryGetComponent<VirtualParent>(out var virtualParentComponent))
+                            {
+                                var virtualParentTransform = virtualParentComponent.transform;
+                                var virtualParentTransformPath = GetPathToChild(virtualParentTransform);
+                                var virtualParentBinding = EditorCurveBinding.FloatCurve(virtualParentTransformPath,
+                                    typeof(VirtualParent), nameof(VirtualParent.parentIndex));
 
-                            AnimationUtility.SetEditorCurve(clip, virtualParentBinding, kvPair.Value);
+                                AnimationUtility.SetEditorCurve(clip, virtualParentBinding, kvPair.Value);
+                            }
+                            else
+                            {
+                                Debug.LogWarning($"A Virtual Parent component wasn't found for '{timeLine.name}' " +
+                                    $"on the '{child.parent.gameObject.name}' game object");
+                            }
                         }
                         break;
 
@@ -823,9 +850,7 @@ namespace Stui.Animations
                         {
                             SetKeys<SpatialInfo>(kvPair.Value, timeLine, x => x.a, animation);
 
-                            var alphaController = child.GetComponent<AlphaController>();
-
-                            if (alphaController != null)
+                            if (child.TryGetComponent<AlphaController>(out var alphaController))
                             {
                                 var alphaControllerTransform = alphaController.transform;
                                 var alphaControllerTransformPath = GetPathToChild(alphaControllerTransform);
@@ -861,7 +886,9 @@ namespace Stui.Animations
                             }
                             else
                             {
-                                var swapper = rendererTransform.GetComponent<TextureController>();
+                                TextureController swapper;
+                                rendererTransform.TryGetComponent(out swapper);
+
                                 if (swapper == null)
                                 {   //Add a Texture Controller if one doesn't already exist
                                     swapper = rendererTransform.gameObject.AddComponent<TextureController>();

@@ -70,7 +70,7 @@ namespace Stui.Extras
 
         void Awake()
         {
-            _animator = GetComponent<Animator>();
+            TryGetComponent(out _animator);
             _mainCam = Camera.main;
 
             var rtController = _animator.runtimeAnimatorController;

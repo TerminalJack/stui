@@ -19,12 +19,14 @@ namespace Stui.Extensions
         /// <returns>Existing or newly added component of type T</returns>
         public static T GetOrAddComponent<T>(this Transform transform) where T : Component
         {
-            T component = transform.GetComponent<T>();
-            if (component == null)
+            if (transform.TryGetComponent<T>(out var component))
             {
-                component = transform.gameObject.AddComponent<T>();
+                return component;
             }
-            return component;
+            else
+            {
+                return transform.gameObject.AddComponent<T>();
+            }
         }
 
         /// <summary>
@@ -35,12 +37,14 @@ namespace Stui.Extensions
         /// <returns>Existing or newly added component of type T</returns>
         public static T GetOrAddComponent<T>(this GameObject gameObject) where T : Component
         {
-            T component = gameObject.GetComponent<T>();
-            if (component == null)
+            if (gameObject.TryGetComponent<T>(out var component))
             {
-                component = gameObject.AddComponent<T>();
+                return component;
             }
-            return component;
+            else
+            {
+                return gameObject.AddComponent<T>();
+            }
         }
 
         // GetOrDefault() is a version of GetValueOrDefault() that is compatible with Unity

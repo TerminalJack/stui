@@ -20,7 +20,7 @@ namespace Stui
 
         void OnEnable()
         {
-            _spriteRenderer = GetComponent<SpriteRenderer>();
+            TryGetComponent(out _spriteRenderer);
             ApplyVisibility();
         }
 

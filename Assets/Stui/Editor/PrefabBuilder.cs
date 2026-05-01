@@ -310,20 +310,17 @@ namespace Stui.Prefabs
                 // should be at most one but the type may have changed between imports so remove all previous
                 // components to be safe.
 
-                var floatComponent = varTransform.gameObject.GetComponent<SpriterFloat>();
-                if (floatComponent)
+                if (varTransform.gameObject.TryGetComponent<SpriterFloat>(out var floatComponent))
                 {
                     DestroyImmediate(floatComponent);
                 }
 
-                var intComponent = varTransform.gameObject.GetComponent<SpriterInt>();
-                if (intComponent)
+                if (varTransform.gameObject.TryGetComponent<SpriterInt>(out var intComponent))
                 {
                     DestroyImmediate(intComponent);
                 }
 
-                var stringComponent = varTransform.gameObject.GetComponent<SpriterString>();
-                if (stringComponent)
+                if (varTransform.gameObject.TryGetComponent<SpriterString>(out var stringComponent))
                 {
                     DestroyImmediate(stringComponent);
                 }
@@ -391,9 +388,10 @@ namespace Stui.Prefabs
 
                 tagInfo.gameObject = tagTransform.gameObject;
 
+                SpriterTag tagComponent;
+
                 // Remove any preexisting tag component.
-                var tagComponent = tagTransform.gameObject.GetComponent<SpriterTag>();
-                if (tagComponent != null)
+                if (tagTransform.gameObject.TryGetComponent(out tagComponent))
                 {
                     DestroyImmediate(tagComponent);
                 }
@@ -497,7 +495,8 @@ namespace Stui.Prefabs
 
             var allEvents = entityInfo.objectInfo.Values.Where(o => o.type == ObjectType.spriterEvent).ToList();
 
-            var eventControllerComponent = parentTransform.GetComponent<EventController>();
+            EventController eventControllerComponent;
+            parentTransform.TryGetComponent(out eventControllerComponent);
 
             if (allEvents.Count > 0)
             {
@@ -521,8 +520,9 @@ namespace Stui.Prefabs
                     thisEventTransform.SetParent(eventsTransform, worldPositionStays: false);
 
                     // Remove any preexisting SpriterEventListener component.
-                    var spriterEventListenerComponent = thisEventTransform.gameObject.GetComponent<SpriterEventListener>();
-                    if (spriterEventListenerComponent != null)
+                    SpriterEventListener spriterEventListenerComponent;
+
+                    if (thisEventTransform.gameObject.TryGetComponent(out spriterEventListenerComponent))
                     {
                         DestroyImmediate(spriterEventListenerComponent);
                     }
@@ -557,9 +557,10 @@ namespace Stui.Prefabs
 
         private void ProcessEntitySounds(Transform parentTransform, SpriterEntityInfo entityInfo)
         {   // All of the sound-related info. will go into a SoundController component at the root of the prefab.
-            var soundController = parentTransform.GetComponent<SoundController>();
 
-            if (soundController != null)
+            SoundController soundController;
+
+            if (parentTransform.TryGetComponent(out soundController))
             {
                 DestroyImmediate(soundController);
             }
@@ -583,9 +584,7 @@ namespace Stui.Prefabs
             {
                 if (info.hasVirtualParent && info.virtualParentTransform != null)
                 {
-                    var vp = info.virtualParentTransform.GetComponent<VirtualParent>();
-
-                    if (vp != null)
+                    if (info.virtualParentTransform.TryGetComponent<VirtualParent>(out var vp))
                     {
                         vp.possibleParents.Clear();
 
@@ -607,8 +606,7 @@ namespace Stui.Prefabs
         {
             // If the prefab already exists during an import AND it has a character map controller, all of the active
             // maps have to be disabled during the import and re-applied afterward.
-            var characterController = instance.GetComponent<CharacterMapController>();
-            if (characterController != null)
+            if (instance.TryGetComponent<CharacterMapController>(out var characterController))
             {
                 _previousActiveMapNames = characterController.activeMapNames.ToList();
                 characterController.Clear();
@@ -623,8 +621,7 @@ namespace Stui.Prefabs
         {
             if (entity.characterMaps.Count == 0 || ScmlImportOptions.options == null || !ScmlImportOptions.options.createCharacterMaps)
             {   // Either the feature is disabled or this entity doesn't have any character maps.
-                var c = instance.GetComponent<CharacterMapController>();
-                if (c != null)
+                if (instance.TryGetComponent<CharacterMapController>(out var c))
                 {
                     DestroyImmediate(c);
                 }
@@ -644,9 +641,8 @@ namespace Stui.Prefabs
                 // Map sprites to the appropriate transform and, if appropriate, the texture controller index.
 
                 Transform targetTransform = renderer.transform;
-                var textureController = targetTransform.GetComponent<TextureController>();
 
-                if (textureController)
+                if (targetTransform.TryGetComponent<TextureController>(out var textureController))
                 {
                     for (int i = 0; i < textureController.Sprites.Length; ++i)
                     {
@@ -799,7 +795,8 @@ namespace Stui.Prefabs
                         child.localRotation = Quaternion.Euler(0, 0, spatialInfo.angle);
                         child.localScale = new Vector3(spatialInfo.scale_x, spatialInfo.scale_y, 1f);
 
-                        var alphaController = child.gameObject.GetComponent<AlphaController>();
+                        AlphaController alphaController;
+                        child.gameObject.TryGetComponent(out alphaController);
 
                         if (spriterBoneInfo.hasBoneAlpha)
                         {
@@ -882,7 +879,8 @@ namespace Stui.Prefabs
 
                 bool needsPivotController = spriterObjectInfo.hasPivotController;
 
-                var pivotController = child.GetComponent<DynamicPivot2D>();
+                DynamicPivot2D pivotController;
+                child.TryGetComponent(out pivotController);
 
                 if (needsPivotController)
                 {
@@ -939,7 +937,8 @@ namespace Stui.Prefabs
                 // An Alpha Controller component will need to be added if any of this sprite's parent bones use alpha.
                 bool needsAlphaController = DoesSpriteNeedAlphaController(timeLine.name, transforms, entityInfo);
 
-                var alphaController = child.GetComponent<AlphaController>();
+                AlphaController alphaController;
+                child.TryGetComponent(out alphaController);
 
                 if (needsAlphaController)
                 {

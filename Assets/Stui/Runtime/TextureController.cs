@@ -38,8 +38,9 @@ namespace Stui
 
         private void Awake()
         {
-            srenderer = GetComponent<SpriteRenderer>();
-			animator = GetComponentInParent<Animator> ();
+            TryGetComponent(out srenderer);
+
+			animator = GetComponentInParent<Animator>();
         }
 
         private void SelectSprite()

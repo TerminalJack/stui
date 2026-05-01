@@ -149,21 +149,21 @@ namespace Stui
                     Transform targetTransform = target.rendererTransform;
                     int imageIndex = target.imageIndex;
 
-                    TextureController textureController = targetTransform.GetComponent<TextureController>();
-                    SpriteRenderer spriteRenderer = targetTransform.GetComponent<SpriteRenderer>();
-
-                    if (textureController)
+                    if (targetTransform.TryGetComponent<SpriteRenderer>(out var spriteRenderer))
                     {
-                        textureController.Sprites[imageIndex] = spriteMap.sprite;
+                        if (targetTransform.TryGetComponent<TextureController>(out var textureController))
+                        {
+                            textureController.Sprites[imageIndex] = spriteMap.sprite;
 
-                        if (textureController.DisplayedSprite == imageIndex)
+                            if (textureController.DisplayedSprite == imageIndex)
+                            {
+                                spriteRenderer.sprite = spriteMap.sprite;
+                            }
+                        }
+                        else
                         {
                             spriteRenderer.sprite = spriteMap.sprite;
                         }
-                    }
-                    else
-                    {
-                        spriteRenderer.sprite = spriteMap.sprite;
                     }
                 }
             }

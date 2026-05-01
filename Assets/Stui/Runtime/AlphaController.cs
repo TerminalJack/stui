@@ -20,11 +20,11 @@ namespace Stui
         [Range(0f, 1f)]
         public float Alpha = 1f;
 
-        SpriteRenderer _spriteRenderer;
+        private SpriteRenderer _spriteRenderer;
 
-        readonly List<AlphaController> _cachedAlphaControllers = new List<AlphaController>();
-        readonly List<VirtualParent> _cachedVirtualParents = new List<VirtualParent>();
-        readonly List<int> _cachedVersions = new List<int>();
+        private readonly List<AlphaController> _cachedAlphaControllers = new List<AlphaController>();
+        private readonly List<VirtualParent> _cachedVirtualParents = new List<VirtualParent>();
+        private readonly List<int> _cachedVersions = new List<int>();
 
         private bool _needInitialResolution = true;
 
@@ -32,7 +32,7 @@ namespace Stui
         {
             // If _spriteRenderer is null then the component is on a bone.  In which case the component only needs to
             // track the alpha value and does't need to do anything else.
-            _spriteRenderer = GetComponent<SpriteRenderer>();
+            TryGetComponent(out _spriteRenderer);
 
             _needInitialResolution = true;
 

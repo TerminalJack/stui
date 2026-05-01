@@ -57,7 +57,7 @@ namespace Stui
 
         void OnEnable()
         {
-            _audioSource = GetComponent<AudioSource>();
+            TryGetComponent(out _audioSource);
 
             if (_audioSource == null)
             {
