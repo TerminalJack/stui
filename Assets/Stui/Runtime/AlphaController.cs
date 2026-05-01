@@ -34,6 +34,8 @@ namespace Stui
             // track the alpha value and does't need to do anything else.
             _spriteRenderer = GetComponent<SpriteRenderer>();
 
+            _needInitialResolution = true;
+
             ApplyAlpha();
         }
 

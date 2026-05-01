@@ -38,6 +38,7 @@ namespace Stui
             if (parentIndex != _lastParentIndex)
             {
                 _version++;
+                _lastParentIndex = parentIndex;
             }
 
             if (parentIndex < 0 ||
