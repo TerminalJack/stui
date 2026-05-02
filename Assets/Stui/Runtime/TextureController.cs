@@ -33,8 +33,20 @@ namespace Stui
 
         private void Start() => SelectSprite();
         private void OnDidApplyAnimationProperties() => SelectSprite();
+
+#if UNITY_EDITOR
         private void Update() { if (!Application.isPlaying) SelectSprite(); }
-        private void LateUpdate() { if (Application.isPlaying) SelectSprite(); }
+#endif
+
+        private void LateUpdate()
+        {
+#if UNITY_EDITOR
+            if (Application.isPlaying)
+#endif
+            {
+                SelectSprite();
+            }
+        }
 
         private void Awake()
         {

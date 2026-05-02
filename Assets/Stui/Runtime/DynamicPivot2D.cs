@@ -43,8 +43,20 @@ namespace Stui
 #endif
 
         void OnDidApplyAnimationProperties() => ApplyPivot();
+
+#if UNITY_EDITOR
         void Update() { if (!Application.isPlaying) ApplyPivot(); }
-        void LateUpdate() { if (Application.isPlaying) ApplyPivot(); }
+#endif
+
+        void LateUpdate()
+        {
+#if UNITY_EDITOR
+            if (Application.isPlaying)
+#endif
+            {
+                ApplyPivot();
+            }
+        }
 
         void GatherReferences()
         {

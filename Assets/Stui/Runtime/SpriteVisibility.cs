@@ -25,8 +25,20 @@ namespace Stui
         }
 
         void OnDidApplyAnimationProperties() => ApplyVisibility();
+
+#if UNITY_EDITOR
         void Update() { if (!Application.isPlaying) ApplyVisibility(); }
-        void LateUpdate() { if (Application.isPlaying) ApplyVisibility(); }
+#endif
+
+        void LateUpdate()
+        {
+#if UNITY_EDITOR
+            if (Application.isPlaying)
+#endif
+            {
+                ApplyVisibility();
+            }
+        }
 
         private void ApplyVisibility()
         {

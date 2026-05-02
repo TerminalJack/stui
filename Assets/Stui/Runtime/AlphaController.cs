@@ -40,8 +40,20 @@ namespace Stui
         }
 
         void OnDidApplyAnimationProperties() => ApplyAlpha();
+
+#if UNITY_EDITOR
         void Update() { if (!Application.isPlaying) ApplyAlpha(); }
-        void LateUpdate() { if (Application.isPlaying) ApplyAlpha(); }
+#endif
+
+        void LateUpdate()
+        {
+#if UNITY_EDITOR
+            if (Application.isPlaying)
+#endif
+            {
+                ApplyAlpha();
+            }
+        }
 
         private void ApplyAlpha()
         {

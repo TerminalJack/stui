@@ -30,8 +30,20 @@ namespace Stui
         void OnEnable() => ApplyVirtualParent();
         void OnValidate() => ApplyVirtualParent();
         void OnDidApplyAnimationProperties() => ApplyVirtualParent();
+
+#if UNITY_EDITOR
         void Update() { if (!Application.isPlaying) ApplyVirtualParent(); }
-        void LateUpdate() { if (Application.isPlaying) ApplyVirtualParent(); }
+#endif
+
+        void LateUpdate()
+        {
+#if UNITY_EDITOR
+            if (Application.isPlaying)
+#endif
+            {
+                ApplyVirtualParent();
+            }
+        }
 
         void ApplyVirtualParent()
         {
