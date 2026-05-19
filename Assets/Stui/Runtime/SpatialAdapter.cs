@@ -4,6 +4,7 @@
 // Portions of this file are derived from the Spriter2UnityDX project.
 // The original author provided an open-use permission statement, preserved in THIRD_PARTY_NOTICES.md.
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,7 +14,7 @@ namespace Stui
     [DisallowMultipleComponent]
     public class SpatialAdapter : MonoBehaviour, ITransformModifier
     {
-        public Vector2 Position = new Vector2();
+        public Vector2 Position = Vector2.zero;
         public Vector2 Scale = Vector2.one;
 
         private readonly List<SpatialAdapter> _cachedSpatialAdapters = new List<SpatialAdapter>();
@@ -32,10 +33,7 @@ namespace Stui
                 Debug.LogWarning("A SpatialAdapter component was created but a DependencyResolver component wasn't " +
                     "found.  The SpatialAdapter component will not work without a corresponding DependencyResolver.");
             }
-        }
 
-        void OnEnable()
-        {
             _isSpritePivotOrCollider =
                 GetComponent<SpriteRenderer>() != null ||
                 GetComponent<DynamicPivot2D>() != null ||
@@ -44,7 +42,10 @@ namespace Stui
             // The animation curves will use the Spatial Controller component to control whether to use Spriter
             // scaling or not.  When importing, it should be created before any SpatialAdapter components.
             _spatialController = GetComponentInParent<SpatialController>();
+        }
 
+        void OnEnable()
+        {
             if (_spatialController == null)
             {   // This is a programming error and shouldn't happen in production.  (Or the user deleted it.)
                 Debug.LogWarning("A SpatialController component could not be found.");
