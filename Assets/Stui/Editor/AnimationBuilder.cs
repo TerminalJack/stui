@@ -1873,7 +1873,7 @@ namespace Stui.Animations
                     ? GetIndexOrAdd(ref sprites, Folders[nextInfo.folderId][nextInfo.fileId])
                     : startValue;
 
-                allCurves.Add(CreateCurve(CurveType.instant, TweakTime(startTime), TweakTime(endTime), startValue, endValue));
+                allCurves.Add(CreateCurve(CurveType.instant, startTime, endTime, startValue, endValue));
             }
 
             CurveBuilder.ConcatenateCurvesInto(curve, allCurves.ToArray());
@@ -2087,7 +2087,7 @@ namespace Stui.Animations
                             $"timeline: {child.name}, time: {key.time_s}, a virtual parent change was detected but a " +
                             "VirtualParent component wasn't setup.  This is likely due to there being timeline keys " +
                             "without a corresponding entry in <bone_ref> or <object_ref>.  This warning can likely " +
-                            "ignored.");
+                            "be ignored.");
                     }
                 }
 
