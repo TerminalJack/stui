@@ -530,9 +530,15 @@ If you are developing, maintaining, or troubleshooting Stui, then you may find t
 * Stui Spriter [Entity Relationship Diagram](https://terminaljack.github.io/stui/Stui%20ERD/Stui%20Spriter%20Entity%20Relationship%20Diagram.pdf)
 * Free and paid Spriter project files can be found [here](https://opengameart.org/art-search?keys=spriter), [here](https://craftpix.net/?s=spriter), and [here](https://www.gamedeveloperstudio.com/).
 
-## Extra Logging
+## Logging Spriter Project Information to the Console
 
-You can enable additional logging for Spriter project imports.  At the moment, only the `SpriterEntityInfo` class emits this extra debugging output.  (One of the class' key objectives is to log information regarding .scml files.)  To turn it on, add the symbol `ENABLE_STUI_DEBUG_LOGS` to your project’s **Scripting Define Symbols**.  If the importer doesn't do something that you expect it to do then the logs may provide some insight.
+If you right-click a `.scml` file in the Project Browser there is a **Log Spriter Project Info. to Console** menu item.  Clicking this will log information regarding the contents of the `.scml` file to the console.  If the importer doesn't do something that you expect it to do then the logs may provide some insight.
+
+>This option is also available via **Assets** | **Log Spriter Project Info. to Console** when a `.scml` file is selected.
+
+## Extra Logging During Imports
+
+You can also enable much of the same logging as mentioned above when importing Spriter projects by adding the symbol `ENABLE_STUI_DEBUG_LOGS` to your project’s **Scripting Define Symbols**.
 
 ## SCML File Inspector
 
