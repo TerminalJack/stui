@@ -1480,10 +1480,11 @@ namespace Stui.Prefabs
             }
         }
 
-        public static Sprite GetSpriteAtPath(string path)
+        public static Sprite GetSpriteAtPath(string path, bool logWarning = true)
         {
             Sprite result = (Sprite)AssetDatabase.LoadAssetAtPath(path, typeof(Sprite));
-            if (result == null)
+
+            if (result == null && logWarning)
             {
                 Debug.LogWarning($"The Spriter .scml file references a sprite at '{path}' but it was not found.  " +
                     "The sprite may not be needed so the import will continue.");

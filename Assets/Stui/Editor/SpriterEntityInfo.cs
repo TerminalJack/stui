@@ -7,7 +7,6 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 
 namespace Stui.EntityInfo
@@ -116,6 +115,8 @@ namespace Stui.EntityInfo
         public bool hasVariables { get { return varInstanceInfos.Count > 0;  } }
         public bool hasTags { get { return tagInstanceInfos.Count > 0; } }
 
+        public bool loggingEnabled = false;
+
         private string _entityName;
 
         public SpriterEntityInfo()
@@ -187,6 +188,8 @@ namespace Stui.EntityInfo
             yield return $"{buildCtx.MessagePrefix}, handling invalid bone data";
             HandleInvalidBoneData(entity);
 
+            if (buildCtx.IsCanceled) { yield break; }
+            yield return $"{buildCtx.MessagePrefix}, logging (if enabled) project-scoped tag information";
             LogProjectScopedTagInfo(scmlObject); // The log messages will only be seen when debug logging is enabled.
 
             if (buildCtx.IsCanceled) { yield break; }
@@ -282,25 +285,29 @@ namespace Stui.EntityInfo
                     "time=0.  All keyframe times for the animation(s) will be adjusted to remove the blank frames.  " +
                     "Because of this the keyframe times will not match Spriter's and the animation(s) may not match " +
                     "Spriter's playback.  More details follow:");
+
+                foreach (var anim in animationsMissingZeroKey)
+                {
+                    Debug.LogWarning($"    Animation: {anim.name}, first key's time: {anim.mainlineKeys[0].time_s}");
+
+                    float delta = 0f - anim.mainlineKeys[0].time_s;
+
+                    foreach (var mlk in anim.mainlineKeys)
+                    {
+                        mlk.time_s += delta;
+                    }
+
+                    IEnumerable<TimelineKey> allTimelineKeys = anim.timelines.SelectMany(tl => tl.keys);
+
+                    foreach (var tlk in allTimelineKeys)
+                    {
+                        tlk.time_s += delta;
+                    }
+                }
             }
-
-            foreach (var anim in animationsMissingZeroKey)
+            else
             {
-                Debug.LogWarning($"    Animation: {anim.name}, first key's time: {anim.mainlineKeys[0].time_s}");
-
-                float delta = 0f - anim.mainlineKeys[0].time_s;
-
-                foreach (var mlk in anim.mainlineKeys)
-                {
-                    mlk.time_s += delta;
-                }
-
-                IEnumerable<TimelineKey> allTimelineKeys = anim.timelines.SelectMany(tl => tl.keys);
-
-                foreach (var tlk in allTimelineKeys)
-                {
-                    tlk.time_s += delta;
-                }
+                Log($"Entity '{entity.name}' has no animations that are missing mainline keys at time=0.");
             }
         }
 
@@ -321,11 +328,15 @@ namespace Stui.EntityInfo
             {
                 Log($"For entity '{entity.name}', one or more mainline keys have a non-linear curve type and therefore " +
                     "blend with the animation's timeline keys.");
-            }
 
-            foreach (var info in mainlineBlendingKeys)
+                foreach (var info in mainlineBlendingKeys)
+                {
+                    Log($"    Animation: {info.anim.name}, mlk info: {info.mlk}");
+                }
+            }
+            else
             {
-                Log($"    Animation: {info.anim.name}, mlk info: {info.mlk}");
+                Log($"Entity '{entity.name}' has no animations with mainline keys that blend with the timeline keys.");
             }
         }
 
@@ -353,21 +364,25 @@ namespace Stui.EntityInfo
             {
                 Debug.LogWarning($"Entity '{entity.name}' has one or more bones that have 'object_ref' entries.  These entries " +
                     "will be ignored.  Information regarding this follows:");
+
+                foreach (var objectRefInfo in mislinkedObjectRefs)
+                {
+                    Debug.LogWarning($"    Animation name: '{objectRefInfo.AnimationName}', object ref id: {objectRefInfo.ObjectRefId}, " +
+                        $"timeline name: '{objectRefInfo.TimelineName}', timeline id: {objectRefInfo.TimelineId}");
+
+                    if (objectRefInfo.mlk.objectRefs.Remove(objectRefInfo.ObjectRef))
+                    {
+                        Log("Entry removed successfully");
+                    }
+                    else
+                    {
+                        Debug.LogWarning("Entry removal failed!");
+                    }
+                }
             }
-
-            foreach (var objectRefInfo in mislinkedObjectRefs)
+            else
             {
-                Debug.LogWarning($"    Animation name: '{objectRefInfo.AnimationName}', object ref id: {objectRefInfo.ObjectRefId}, " +
-                    $"timeline name: '{objectRefInfo.TimelineName}', timeline id: {objectRefInfo.TimelineId}");
-
-                if (objectRefInfo.mlk.objectRefs.Remove(objectRefInfo.ObjectRef))
-                {
-                    Log("Entry removed successfully");
-                }
-                else
-                {
-                    Debug.LogWarning("Entry removal failed!");
-                }
+                Log($"Entity '{entity.name}' has no invalid bone data.");
             }
         }
 
@@ -477,29 +492,34 @@ namespace Stui.EntityInfo
                 // Note: Use regular console logging for this message so that the user will know which animations
                 // are affected.
                 var animatonNamesStr = string.Join(", ", boneScaleInfos.Select(bi => $"'{bi.animation.name}'").Distinct());
+                string prefix = loggingEnabled ? "    " : "";
 
-                Debug.Log($"Entity '{entity.name}' has one or more animations ({animatonNamesStr}) that have bones " +
+                Debug.Log($"{prefix}Entity '{entity.name}' has one or more animations ({animatonNamesStr}) that have bones " +
                     "with animated scales.");
-            }
 
-            foreach (var boneScaleInfo in boneScaleInfos)
-            {
-                boneScaleInfo.animation.hasAnimatedBoneScales = true;
-                boneInfos[boneScaleInfo.boneName].needsSpatialAdapter = true;
-
-                Log($"    Animation '{boneScaleInfo.animation.name}', bone name '{boneScaleInfo.boneName}' has one or " +
-                    "more keys with the following (different) scales:");
-
-                foreach (var scaleInfo in boneScaleInfo.scales)
+                foreach (var boneScaleInfo in boneScaleInfos)
                 {
-                    Log($"        scale x: {scaleInfo.scaleX}, scale y: {scaleInfo.scaleY}");
+                    boneScaleInfo.animation.hasAnimatedBoneScales = true;
+                    boneInfos[boneScaleInfo.boneName].needsSpatialAdapter = true;
+
+                    Log($"    Animation '{boneScaleInfo.animation.name}', bone name '{boneScaleInfo.boneName}' has one or " +
+                        "more keys with the following (different) scales:");
+
+                    foreach (var scaleInfo in boneScaleInfo.scales)
+                    {
+                        Log($"        scale x: {scaleInfo.scaleX}, scale y: {scaleInfo.scaleY}");
+                    }
                 }
+
+                var namesOfBonesWithAnimatedScales = boneScaleInfos.Select(i => i.boneName).Distinct().OrderBy(n => n).ToList();
+
+                SetupBonesWithAnimatedBoneScales(entity, namesOfBonesWithAnimatedScales);
+                SetupObjectsWithAnimatedBoneScales(entity, namesOfBonesWithAnimatedScales);
             }
-
-            var namesOfBonesWithAnimatedScales = boneScaleInfos.Select(i => i.boneName).Distinct().OrderBy(n => n).ToList();
-
-            SetupBonesWithAnimatedBoneScales(entity, namesOfBonesWithAnimatedScales);
-            SetupObjectsWithAnimatedBoneScales(entity, namesOfBonesWithAnimatedScales);
+            else
+            {
+                Log($"Entity '{entity.name}' has no animations with animated bone scales.");
+            }
         }
 
         private void SetupBonesWithAnimatedBoneScales(Entity entity, List<string> namesOfBonesWithAnimatedScales)
@@ -531,11 +551,11 @@ namespace Stui.EntityInfo
             {
                 Log($"Entity '{entity.name}' has the following bones that may require a spatial adapter due " +
                     "to either having animated scales or having one or more ancestor bones that have an animated scale:");
-            }
 
-            foreach (var boneName in boneNamesWithAnimatedBoneScales)
-            {
-                Log($"    bone name: '{boneName}'");
+                foreach (var boneName in boneNamesWithAnimatedBoneScales)
+                {
+                    Log($"    bone name: '{boneName}'");
+                }
             }
 
             // For each of the bones in namesOfBonesWithAnimatedScales, walk up their hierarchy to the root and mark any
@@ -564,11 +584,11 @@ namespace Stui.EntityInfo
             {
                 Log($"Entity '{entity.name}', has the following bones that may need a scale tracker due to being an " +
                     "ancestor of one or more bones with animated scales:");
-            }
 
-            foreach (var boneName in boneNamesWithScaleTrackers)
-            {
-                Log($"    bone name: '{boneName}'");
+                foreach (var boneName in boneNamesWithScaleTrackers)
+                {
+                    Log($"    bone name: '{boneName}'");
+                }
             }
         }
 
@@ -629,11 +649,11 @@ namespace Stui.EntityInfo
             {
                 Log($"Entity '{entity.name}' has the following objects that may require a spatial adapter due " +
                     "to having one or more ancestor bones that have an animated scale:");
-            }
 
-            foreach (var objectName in objectNamesWithAnimatedBoneScales)
-            {
-                Log($"    sprite name: '{objectName}'");
+                foreach (var objectName in objectNamesWithAnimatedBoneScales)
+                {
+                    Log($"    sprite name: '{objectName}'");
+                }
             }
 
             // For each of the objects in objectNamesWithAnimatedBoneScales, walk up their hierarchy to the root and
@@ -665,11 +685,11 @@ namespace Stui.EntityInfo
 
                 Log($"Entity '{entity.name}', has the following {note}bones that may need a scale tracker due " +
                     "to being an ancestor of one or more objects that use a spatial adapter:");
-            }
 
-            foreach (var boneName in newBoneNamesWithScaleTrackers)
-            {
-                Log($"    bone name: '{boneName}'");
+                foreach (var boneName in newBoneNamesWithScaleTrackers)
+                {
+                    Log($"    bone name: '{boneName}'");
+                }
             }
         }
 
@@ -720,16 +740,20 @@ namespace Stui.EntityInfo
             if (namesOfBonesUsingAlpha.Count > 0)
             {
                 Log($"Entity '{entity.name}' has the following bones that will require an alpha controller:");
-            }
 
-            foreach (var boneName in namesOfBonesUsingAlpha)
+                foreach (var boneName in namesOfBonesUsingAlpha)
+                {
+                    Log($"    bone name: '{boneName}'");
+
+                    boneInfos[boneName].hasAlphaController = true;
+                }
+
+                SetupSpritesWithAlphaController(entity, namesOfBonesUsingAlpha);
+            }
+            else
             {
-                Log($"    bone name: '{boneName}'");
-
-                boneInfos[boneName].hasAlphaController = true;
+                Log($"Entity '{entity.name}' has no bones or sprites that require an alpha controller.");
             }
-
-            SetupSpritesWithAlphaController(entity, namesOfBonesUsingAlpha);
         }
 
         private void SetupSpritesWithAlphaController(Entity entity, List<string> namesOfBonesUsingAlpha)
@@ -758,11 +782,11 @@ namespace Stui.EntityInfo
             {
                 Log($"Entity '{entity.name}' has the following sprites that will require an alpha controller due " +
                     "to having an ancestor using bone alpha:");
-            }
 
-            foreach (var spriteName in spriteNamesWithAlphaControllers)
-            {
-                Log($"    sprite name: '{spriteName}'");
+                foreach (var spriteName in spriteNamesWithAlphaControllers)
+                {
+                    Log($"    sprite name: '{spriteName}'");
+                }
             }
         }
 
@@ -878,7 +902,7 @@ namespace Stui.EntityInfo
             }
             else
             {
-                Log($"Entity '{entity.name}' has no variable definitions.");
+                Log($"Entity '{entity.name}' has no entity-scoped variable definitions.");
             }
 
             var entityScopedTagDefIds = (
@@ -931,7 +955,7 @@ namespace Stui.EntityInfo
             }
             else
             {
-                Log($"Entity '{entity.name}' uses no entity-scoped tags.");
+                Log($"Entity '{entity.name}' has no entity-scoped tags.");
             }
         }
 
@@ -940,13 +964,16 @@ namespace Stui.EntityInfo
             // Put the appropriate references in entity.animation[].metadata.varlines[].varDef and
             // entity.animation[].metadata.taglineKeys[].tags[].tagName.
 
-            foreach (var anim in entity.animations)
-            {
-                if (anim.metadata == null)
-                {
-                    continue;
-                }
+            var animsWithMetadata = entity.animations.Where(a => a.metadata != null).ToList();
 
+            if (animsWithMetadata.Count == 0)
+            {
+                Log($"Entity: '{entity.name}' has no entity-scoped metadata to assign.");
+                return;
+            }
+
+            foreach (var anim in animsWithMetadata)
+            {
                 for (int i = 0; i < anim.metadata.varlines.Count; ++i)
                 {
                     var varline = anim.metadata.varlines[i];
@@ -1002,36 +1029,84 @@ namespace Stui.EntityInfo
         {
             Log($"Entity '{entity.name}', preprocessing object-scoped metadata for all bones...");
 
-            foreach (var boneInfo in boneInfos.Values.Where(o => o.type == ObjectType.bone))
+            var allBones = boneInfos.Values.Where(o => o.type == ObjectType.bone).ToList();
+
+            if (allBones.Count > 0)
             {
-                DoPreprocessObjectScopedMetadata(scmlObject, entity, boneInfo);
+                DoPreprocessObjectScopedMetadata(scmlObject, entity, allBones);
+            }
+            else
+            {
+                Log($"    Entity '{entity.name}' has no bones.");
             }
 
             Log($"Entity: '{entity.name}', preprocessing object-scoped metadata for all sprites...");
 
-            foreach (var spriteInfo in objectInfos.Values.Where(o => o.type == ObjectType.sprite))
+            var allSprites = objectInfos.Values.Where(o => o.type == ObjectType.sprite).ToList();
+
+            if (allSprites.Count > 0)
             {
-                DoPreprocessObjectScopedMetadata(scmlObject, entity, spriteInfo);
+                DoPreprocessObjectScopedMetadata(scmlObject, entity, allSprites);
+            }
+            else
+            {
+                Log($"    Entity: '{entity.name}' has no sprites.");
             }
 
             Log($"Entity: '{entity.name}', preprocessing object-scoped metadata for all action points...");
 
-            foreach (var actionPtInfo in objectInfos.Values.Where(o => o.type == ObjectType.point))
+            var allActionPoints = objectInfos.Values.Where(o => o.type == ObjectType.point).ToList();
+
+            if (allActionPoints.Count > 0)
             {
-                DoPreprocessObjectScopedMetadata(scmlObject, entity, actionPtInfo);
+                DoPreprocessObjectScopedMetadata(scmlObject, entity, allActionPoints);
+            }
+            else
+            {
+                Log($"    Entity: '{entity.name}' has no action points.");
             }
 
             Log($"Entity: '{entity.name}', preprocessing object-scoped metadata for all collision rectangles...");
 
-            foreach (var collisionRectangleInfo in objectInfos.Values.Where(o => o.type == ObjectType.box))
+            var allCollisionRectangles = objectInfos.Values.Where(o => o.type == ObjectType.box).ToList();
+
+            if (allCollisionRectangles.Count > 0)
             {
-                DoPreprocessObjectScopedMetadata(scmlObject, entity, collisionRectangleInfo);
+                DoPreprocessObjectScopedMetadata(scmlObject, entity, allActionPoints);
+            }
+            else
+            {
+                Log($"    Entity: '{entity.name}' has no collision rectangles.");
             }
         }
 
-        private void DoPreprocessObjectScopedMetadata(ScmlObject scmlObject, Entity entity, SpriterInfoBase info)
+        private void DoPreprocessObjectScopedMetadata<T>(ScmlObject scmlObject, Entity entity, List<T> allInfos) where T : SpriterInfoBase
+        {
+            int totalVars = 0;
+            int totalTags = 0;
+
+            foreach (var info in allInfos)
+            {
+                int numVars;
+                int numTags;
+
+                DoPreprocessObjectScopedMetadata(scmlObject, entity, info, out numVars, out numTags);
+
+                totalVars += numVars;
+                totalTags += numTags;
+            }
+
+            Log($"    Total # of Variables: {totalVars}");
+            Log($"    Total # of Tags: {totalTags}");
+        }
+
+        private void DoPreprocessObjectScopedMetadata(ScmlObject scmlObject, Entity entity, SpriterInfoBase info,
+            out int numVars, out int numTags)
         {
             // Populate info.variableDefs and info.tagDefs collections
+
+            numVars = 0;
+            numTags = 0;
 
             if (info.type == ObjectType.spriterEvent)
             {
@@ -1040,6 +1115,7 @@ namespace Stui.EntityInfo
             }
 
             var allVarDefs = entity.objectInfos.FirstOrDefault(o => o.name == info.name && o.objectType == info.type)?.variableDefs;
+            numVars = allVarDefs != null ? allVarDefs.Count : 0;
 
             if (allVarDefs?.Count > 0)
             {
@@ -1114,6 +1190,8 @@ namespace Stui.EntityInfo
             .OrderBy(id => id)
             .ToList();
 
+            numTags = objectScopedTagDefIds.Count;
+
             if (objectScopedTagDefIds.Count > 0)
             {
                 Log($"    '{info.name}' uses the following object-scoped tags:");
@@ -1159,14 +1237,41 @@ namespace Stui.EntityInfo
         {
             Log($"Entity: '{entity.name}', preprocessing event-scoped metadata for all events...");
 
-            foreach (var eventInfo in objectInfos.Values.Where(o => o.type == ObjectType.spriterEvent))
+            var allEvents = objectInfos.Values.Where(o => o.type == ObjectType.spriterEvent).ToList();
+
+            if (allEvents.Count > 0)
             {
-                DoPreprocessEventScopedMetadata(scmlObject, entity, eventInfo);
+                int totalVars = 0;
+                int totalTags = 0;
+
+                foreach (var eventInfo in allEvents)
+                {
+                    int numVars;
+                    int numTags;
+
+                    DoPreprocessEventScopedMetadata(scmlObject, entity, eventInfo, out numVars, out numTags);
+
+                    totalVars += numVars;
+                    totalTags += numTags;
+                }
+
+                Log($"    Total # of Variables: {totalVars}");
+                Log($"    Total # of Tags: {totalTags}");
+                {
+                }
+            }
+            else
+            {
+                Log($"    '{entity.name}' has no events.");
             }
         }
 
-        private void DoPreprocessEventScopedMetadata(ScmlObject scmlObject, Entity entity, SpriterInfoBase info)
+        private void DoPreprocessEventScopedMetadata(ScmlObject scmlObject, Entity entity, SpriterInfoBase info,
+            out int numVars, out int numTags)
         {
+            numVars = 0;
+            numTags = 0;
+
             // Populate info.variableDefs and info.tagDefs collections
 
             if (info.type != ObjectType.spriterEvent)
@@ -1176,6 +1281,7 @@ namespace Stui.EntityInfo
             }
 
             var allVarDefs = entity.objectInfos.FirstOrDefault(o => o.name == info.name && o.objectType == info.type)?.variableDefs;
+            numVars = allVarDefs != null ? allVarDefs.Count : 0;
 
             if (allVarDefs?.Count > 0)
             {
@@ -1250,6 +1356,8 @@ namespace Stui.EntityInfo
             .OrderBy(id => id)
             .ToList();
 
+            numTags = eventScopedTagDefIds.Count;
+
             if (eventScopedTagDefIds.Count > 0)
             {
                 Log($"    '{info.name}' uses the following event-scoped tags:");
@@ -1295,42 +1403,78 @@ namespace Stui.EntityInfo
         {
             Log($"Entity '{entity.name}', assigning object-scoped metadata references for all bones...");
 
-            foreach (var boneInfo in boneInfos.Values.Where(o => o.type == ObjectType.bone))
+            var allBones = boneInfos.Values.Where(o => o.type == ObjectType.bone).ToList();
+
+            if (allBones.Count > 0)
             {
-                if (boneInfo.hasMetadata)
+                foreach (var boneInfo in allBones)
                 {
-                    DoAssignObjectScopedMetadataReferences(scmlObject, entity, boneInfo);
+                    if (boneInfo.hasMetadata)
+                    {
+                        DoAssignObjectScopedMetadataReferences(scmlObject, entity, boneInfo);
+                    }
                 }
+            }
+            else
+            {
+                Log($"    Entity '{entity.name}' has no bones.");
             }
 
             Log($"Entity '{entity.name}', assigning object-scoped metadata references for all sprites...");
 
-            foreach (var spriteInfo in objectInfos.Values.Where(o => o.type == ObjectType.sprite))
+            var allSprites = objectInfos.Values.Where(o => o.type == ObjectType.sprite).ToList();
+
+            if (allSprites.Count > 0)
             {
-                if (spriteInfo.hasMetadata)
+                foreach (var spriteInfo in allSprites)
                 {
-                    DoAssignObjectScopedMetadataReferences(scmlObject, entity, spriteInfo);
+                    if (spriteInfo.hasMetadata)
+                    {
+                        DoAssignObjectScopedMetadataReferences(scmlObject, entity, spriteInfo);
+                    }
                 }
+            }
+            else
+            {
+                Log($"    Entity '{entity.name}' has no sprites.");
             }
 
             Log($"Entity '{entity.name}', assigning object-scoped metadata references for all action points...");
 
-            foreach (var actionPtInfo in objectInfos.Values.Where(o => o.type == ObjectType.point))
+            var allActionPoints = objectInfos.Values.Where(o => o.type == ObjectType.point).ToList();
+
+            if (allActionPoints.Count > 0)
             {
-                if (actionPtInfo.hasMetadata)
+                foreach (var actionPtInfo in allActionPoints)
                 {
-                    DoAssignObjectScopedMetadataReferences(scmlObject, entity, actionPtInfo);
+                    if (actionPtInfo.hasMetadata)
+                    {
+                        DoAssignObjectScopedMetadataReferences(scmlObject, entity, actionPtInfo);
+                    }
                 }
+            }
+            else
+            {
+                Log($"    Entity '{entity.name}' has no action points.");
             }
 
             Log($"Entity '{entity.name}', assigning object-scoped metadata references for all collision rectangles...");
 
-            foreach (var collisionRectangleInfo in objectInfos.Values.Where(o => o.type == ObjectType.box))
+            var allCollisionRectangles = objectInfos.Values.Where(o => o.type == ObjectType.box).ToList();
+
+            if (allCollisionRectangles.Count > 0)
             {
-                if (collisionRectangleInfo.hasMetadata)
+                foreach (var collisionRectangleInfo in allCollisionRectangles)
                 {
-                    DoAssignObjectScopedMetadataReferences(scmlObject, entity, collisionRectangleInfo);
+                    if (collisionRectangleInfo.hasMetadata)
+                    {
+                        DoAssignObjectScopedMetadataReferences(scmlObject, entity, collisionRectangleInfo);
+                    }
                 }
+            }
+            else
+            {
+                Log($"    Entity '{entity.name}' has no collision rectangles.");
             }
         }
 
@@ -1404,12 +1548,21 @@ namespace Stui.EntityInfo
         {
             Log($"Entity '{entity.name}', assigning event-scoped metadata references for all events...");
 
-            foreach (var eventInfo in objectInfos.Values.Where(o => o.type == ObjectType.spriterEvent))
+            var allEvents = objectInfos.Values.Where(o => o.type == ObjectType.spriterEvent).ToList();
+
+            if (allEvents.Count > 0)
             {
-                if (eventInfo.hasMetadata)
+                foreach (var eventInfo in allEvents)
                 {
-                    DoAssignEventScopedMetadataReferences(scmlObject, entity, eventInfo);
+                    if (eventInfo.hasMetadata)
+                    {
+                        DoAssignEventScopedMetadataReferences(scmlObject, entity, eventInfo);
+                    }
                 }
+            }
+            else
+            {
+                Log($"    '{entity.name}' has no events.");
             }
         }
 
@@ -1624,7 +1777,7 @@ namespace Stui.EntityInfo
 
             if (allSoundlineInfo.Count == 0)
             {
-                Log($"Entity '{entity.name}' has no soundlines:");
+                Log($"Entity '{entity.name}' has no soundlines.");
                 return;
             }
 
@@ -1711,14 +1864,18 @@ namespace Stui.EntityInfo
             if (allUnsupportedTypeNames.Count > 0)
             {
                 Debug.LogWarning($"Entity '{entity.name}' has the following unsupported types:");
+
+                foreach (var unsupportedType in allUnsupportedTypeNames)
+                {
+                    Debug.LogWarning($"    '{unsupportedType.name}' (type of {unsupportedType.objectType})");
+
+                    // This still gets an entry in objectInfo.
+                    objectInfos.Add(unsupportedType.name, new SpriterObjectInfo(unsupportedType.name, unsupportedType.objectType));
+                }
             }
-
-            foreach (var unsupportedType in allUnsupportedTypeNames)
+            else
             {
-                Debug.LogWarning($"    '{unsupportedType.name}' (type of {unsupportedType.objectType})");
-
-                // This still gets an entry in objectInfo.
-                objectInfos.Add(unsupportedType.name, new SpriterObjectInfo(unsupportedType.name, unsupportedType.objectType));
+                Log($"Entity: '{entity.name}' has no unsupported types.");
             }
 
             // Check for any names that are duplicated in both collections and warn the
@@ -1731,11 +1888,15 @@ namespace Stui.EntityInfo
             {
                 Debug.LogWarning($"Entity '{entity.name}' has one or more bones that have the same name as an object.  " +
                     "This may cause problems and should be avoided.  The names follow:");
-            }
 
-            foreach (var name in sharedNames)
+                foreach (var name in sharedNames)
+                {
+                    Debug.LogWarning($"    The name '{name}' is shared by both a bone and a {objectInfos[name].type}");
+                }
+            }
+            else
             {
-                Debug.LogWarning($"    The name '{name}' is shared by both a bone and a {objectInfos[name].type}");
+                Log($"Entity: '{entity.name}' has no bones that have the same name as an object.");
             }
         }
 
@@ -1774,15 +1935,19 @@ namespace Stui.EntityInfo
             if (nonDefaultPivotSpriteNames.Count > 0)
             {
                 Log($"For entity '{entity.name}', the following sprites have non-default pivots and will need a pivot controller.");
+
+                foreach (var spriteName in nonDefaultPivotSpriteNames)
+                {
+                    Log($"    '{spriteName}'");
+
+                    objectInfos[spriteName].hasPivotController = true;
+                    objectInfos[spriteName].pivotControllerTransformName = spriteName;
+                    objectInfos[spriteName].spriteRendererTransformName = spriteName + " renderer";
+                }
             }
-
-            foreach (var spriteName in nonDefaultPivotSpriteNames)
+            else
             {
-                Log($"    '{spriteName}'");
-
-                objectInfos[spriteName].hasPivotController = true;
-                objectInfos[spriteName].pivotControllerTransformName = spriteName;
-                objectInfos[spriteName].spriteRendererTransformName = spriteName + " renderer";
+                Log($"Entity '{entity.name}' has no sprites with a non-default pivot.");
             }
         }
 
@@ -1819,16 +1984,28 @@ namespace Stui.EntityInfo
             {
                 Log($"For entity '{entity.name}', some bones have more than one parent and will need a virtual parent.");
             }
+            else
+            {
+                Log($"Entity '{entity.name}' has no bones that have more than one parent.");
+            }
 
             Log($"Entity '{entity.name}', list of bones and their parent(s):");
 
-            foreach (var info in boneNamesAndTheirParentNames)
+            if (boneNamesAndTheirParentNames.Count > 0)
             {
-                var parentNamesString = string.Join(", ", info.ParentBoneNames.Select(s => $"'{s}'"));
+                foreach (var info in boneNamesAndTheirParentNames)
+                {
+                    var parentNamesString = string.Join(", ", info.ParentBoneNames.Select(s => $"'{s}'"));
+                    var callout = info.ParentBoneNames.Count > 1 ? "<-- Multiple parents" : "";
 
-                Log($"    bone name: '{info.BoneName}', parent name(s) are: {parentNamesString}");
+                    Log($"    bone name: '{info.BoneName}', parent name(s) are: {parentNamesString} {callout}");
 
-                boneInfos[info.BoneName].parentBoneNames.AddRange(info.ParentBoneNames);
+                    boneInfos[info.BoneName].parentBoneNames.AddRange(info.ParentBoneNames);
+                }
+            }
+            else
+            {
+                Log($"    Entity '{entity.name}' has no bones.");
             }
         }
 
@@ -1865,16 +2042,28 @@ namespace Stui.EntityInfo
             {
                 Log($"For entity '{entity.name}', some objects have more than one parent and will need a virtual parent.");
             }
+            else
+            {
+                Log($"Entity '{entity.name}' has no objects that have more than one parent.");
+            }
 
             Log($"Entity '{entity.name}', list of objects and their parent(s):");
 
-            foreach (var info in objectNamesAndTheirParentNames)
+            if (objectNamesAndTheirParentNames.Count > 0)
             {
-                var parentNamesString = string.Join(", ", info.ParentBoneNames.Select(s => $"'{s}'"));
+                foreach (var info in objectNamesAndTheirParentNames)
+                {
+                    var parentNamesString = string.Join(", ", info.ParentBoneNames.Select(s => $"'{s}'"));
+                    var callout = info.ParentBoneNames.Count > 1 ? "<-- Multiple parents" : "";
 
-                Log($"    object name: '{info.ObjectName}', parent name(s) are: {parentNamesString}");
+                    Log($"    object name: '{info.ObjectName}', parent name(s) are: {parentNamesString} {callout}");
 
-                objectInfos[info.ObjectName].parentBoneNames.AddRange(info.ParentBoneNames);
+                    objectInfos[info.ObjectName].parentBoneNames.AddRange(info.ParentBoneNames);
+                }
+            }
+            else
+            {
+                Log($"    Entity '{entity.name}' has no objects.");
             }
         }
 
@@ -1938,7 +2127,7 @@ namespace Stui.EntityInfo
             // for it to be in each of the timeline spatial info objects since that is where
             // all of the keyed information is.  We have to be careful about how we determine
             // the parents, though.  When there is a parent (or pivot) change an extra
-            // timeline key will be created and it will have the same time as the previous
+            // timeline key will (sometimes) be created and it will have the same time as the previous
             // timeline key but will hold the information regarding the new parent and/or pivot.
 
             // First get the parent names of all of the timeline keys...
@@ -1994,6 +2183,9 @@ namespace Stui.EntityInfo
                 })
                 .ToList();
 
+            int numParentChanges = 0;
+            int numPivotChanges = 0;
+
             foreach (var tlGroup in groupedKeyParents)
             {
                 var animation = tlGroup.animation;
@@ -2038,11 +2230,22 @@ namespace Stui.EntityInfo
                     if (currInfo is SpriteInfo currSI && nextKey.info is SpriteInfo nextSI)
                     {
                         isPivotChange = IsPivotChange(currSI, nextSI);
+
+                        if (isPivotChange)
+                        {
+                            numPivotChanges++;
+                            Log($"Entity: '{entity.name}', animation: '{animation.name}', timeline: '{timeline.name}, " +
+                                $"pivot change (requiring timing adjustment) detected at time: {currTime_s}");
+                        }
                     }
 
                     // Apply parent change
                     if (isParentChange)
                     {
+                        numParentChanges++;
+                        Log($"Entity: '{entity.name}', animation: '{animation.name}', timeline: '{timeline.name}, " +
+                            $"parent change (requiring timing adjustment) detected at time: {currTime_s}");
+
                         currInfo.parentBoneName = prevParentName;
 
                         createAuxKey |= HandleKeyTimeAdjustment(animation, currKey);
@@ -2057,7 +2260,7 @@ namespace Stui.EntityInfo
                     if (!isParentChange && !isPivotChange)
                     {   // This shouldn't happen but two keys with the same time will cause problems so treat it like
                         // a pivot/parent change and adjust the timeline key time and create a corresponding mainline
-                        // key if necessary.
+                        // key if necessary.  (This is seen fairly often and I'm not sure why.)
 
                         Debug.LogWarning($"For entity: {entity.name}, animation: {animation.name}, timeline: {timeline.name}, " +
                             $" time: {currTime_s}: Two timeline keys have the same time but neither a parent change or " +
@@ -2074,26 +2277,25 @@ namespace Stui.EntityInfo
                     timeline.keys.RemoveAt(0);
                 }
             }
+
+            Log($"Entity '{entity.name}', has {numParentChanges} parent changes across all animations that require timing adjustments.");
+            Log($"Entity '{entity.name}', has {numPivotChanges} pivot changes across all animations that require timing adjustments.");
         }
 
-        private const string LOG_SYMBOL = "ENABLE_STUI_DEBUG_LOGS";
+#if ENABLE_STUI_DEBUG_LOGS
+        private const bool forceLogging = true;
+#else
+        private const bool forceLogging = false;
+#endif
 
-        [Conditional(LOG_SYMBOL)]
-        private static void Log(object message, Object context = null)
+        private void Log(object message, Object context = null)
         {
-            Debug.Log(message, context);
-        }
+            if (forceLogging || loggingEnabled)
+            {
+                string prefix = loggingEnabled ? "    " : "";
 
-        [Conditional(LOG_SYMBOL)]
-        private static void LogFormat(string format, params object[] args)
-        {
-            Debug.LogFormat(format, args);
-        }
-
-        [Conditional(LOG_SYMBOL)]
-        private static void LogFormat(Object context, string format, params object[] args)
-        {
-            Debug.LogFormat(context, format, args);
+                Debug.Log($"{prefix}{message}", context);
+            }
         }
     }
 }

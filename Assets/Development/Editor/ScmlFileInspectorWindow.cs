@@ -487,7 +487,8 @@ public class ScmlFileInspectorWindow : EditorWindow
             EarlyPerEntityTasks = _earlyPerEntityTasks,
             PostSpriterEntityInfoPerEntityTasks = _postSpriterEntityInfoPerEntityTasks,
             LatePerEntityTasks = _latePerEntityTasks,
-            PerAnimationTasks = _perAnimationTasks
+            PerAnimationTasks = _perAnimationTasks,
+            LogStatusMessages = _logStatusMessages
         };
 
         inspectionCtx.InputFileName = Path.GetFileName(_scmlInputPath);
@@ -537,6 +538,7 @@ public class ScmlFileInspectorWindow : EditorWindow
         public List<ScmlInspectorEntityTask> LatePerEntityTasks = new List<ScmlInspectorEntityTask>();
 
         public List<ScmlInspectorAnimationTask> PerAnimationTasks = new List<ScmlInspectorAnimationTask>();
+        public bool LogStatusMessages = false;
 
         public IEnumerator Process()
         {
@@ -632,7 +634,11 @@ public class ScmlFileInspectorWindow : EditorWindow
 
                 if (PreprocessWithSpriterEntityInfo)
                 {
-                    entityInfo = new SpriterEntityInfo();
+                    entityInfo = new SpriterEntityInfo()
+                    {
+                        loggingEnabled = LogStatusMessages
+                    };
+
                     var entityInfoProcess = entityInfo.Process(spriterProjDirectory, ScmlObject, entity, fileInfo, InspectionCtx);
 
                     while (entityInfoProcess.MoveNext())
