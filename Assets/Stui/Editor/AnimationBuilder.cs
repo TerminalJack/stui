@@ -107,25 +107,44 @@ namespace Stui.Animations
             // This Dictionary will shrink in size for every transform that is considered "used".
             var pendingTransforms = new Dictionary<string, Transform>(Transforms);
 
+            var processedBoneNames = new HashSet<string> { "rootTransform" };
+
             foreach (var key in animation.mainlineKeys)
             {
-                var parentTimelines = new Dictionary<int, List<TimelineKey>>();
                 var brefs = new Queue<Ref>(key.boneRefs);
+                int deadlockCounter = 0;
 
                 while (brefs.Count > 0)
                 {
                     var bref = brefs.Dequeue();
 
-                    if (bref.parentRefId < 0 || parentTimelines.ContainsKey(bref.parentRefId))
-                    {
-                        var timeline = timelines[bref.timelineId];
-                        parentTimelines[bref.id] = new List<TimelineKey>(timeline.keys);
-                        Transform bone;
+                    var timeline = timelines[bref.timelineId];
+                    string boneName = timeline.name;
 
-                        if (pendingTransforms.TryGetValue(timeline.name, out bone))
-                        {   //Skip it if it's already "used"
+                    if (processedBoneNames.Contains(boneName)) { continue; }
+
+                    var parentBoneNames = timeline.keys.Select(k => k.info.parentBoneName).Distinct().ToList();
+                    bool parentsProcessed = parentBoneNames.All(processedBoneNames.Contains);
+                    bool deadlocked = deadlockCounter > brefs.Count;
+
+                    if (parentsProcessed || deadlocked)
+                    {
+                        if (deadlocked)
+                        {
+                            string parentBoneNamesStr = string.Join(", ", parentBoneNames.Select(n => $"'{n}'"));
+                            string processedBoneNamesStr = string.Join(", ", processedBoneNames.Select(n => $"'{n}'"));
+                            Debug.LogWarning($"Deadlock detected.  timeline: {timeline.name}, parentBoneNames: {parentBoneNamesStr}, processedBoneNames: {processedBoneNamesStr}");
+                        }
+
+                        deadlockCounter = 0;
+                        processedBoneNames.Add(boneName);
+
+                        if (pendingTransforms.TryGetValue(timeline.name, out Transform bone)) // Skip it if it's already "used"
+                        {
                             if (buildCtx.IsCanceled) { yield break; }
                             yield return $"{buildCtx.MessagePrefix}, bone: '{timeline.name}', creating animation curves";
+
+                            HandleAnimatedBoneScales(animation, timeline);
 
                             SetCurves(bone, DefaultBones[timeline.name], timeline, clip, animation);
                             pendingTransforms.Remove(timeline.name);
@@ -133,6 +152,7 @@ namespace Stui.Animations
                     }
                     else
                     {
+                        deadlockCounter++;
                         brefs.Enqueue(bref);
                     }
                 }
@@ -398,6 +418,322 @@ namespace Stui.Animations
             EditorUtility.SetDirty(clip);
             AssetDatabase.SaveAssets();
             AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(clip));
+        }
+
+        private void HandleAnimatedBoneScales(Animation animation, Timeline timeline)
+        {
+            bool boneScaleSettingEnabled = ScmlImportOptions.options?.boneScaleAnimationEnabled ?? false;
+            if (boneScaleSettingEnabled)
+            {
+                return; // The user isn't baking animated bone scales.
+            }
+
+            var boneInfo = entityInfo.boneInfos.GetOrDefault(timeline.name);
+            if (boneInfo == null || !boneInfo.needsSpatialAdapter)
+            {
+                return; // This bone doesn't have any animations with animated bone scales.
+            }
+
+            // At this point, this animation has animated bone scales AND this bone either has animated scales or has a
+            // parent bone with animated scales (not necessarily being animated in this animation)...
+
+            // See if any of the spans have an animated scale...
+            var animatedBoneScaleSpans = new List<(float spanStart, float spanEnd)>();
+
+            FindAnimatedBoneScaleSpans(animation, timeline, animatedBoneScaleSpans);
+
+            if (animatedBoneScaleSpans.Count > 0)
+            {
+                HandleAnimatedBoneScaleSpans(animation, timeline, animatedBoneScaleSpans);
+            }
+        }
+
+        private void FindAnimatedBoneScaleSpans(Animation animation, Timeline timeline,
+            List<(float spanStart, float spanEnd)> animatedBoneScaleSpans)
+        {
+            for (int tlkIdx = 0; tlkIdx < timeline.keys.Count; ++tlkIdx)
+            {
+                var thisTlk = timeline.keys[tlkIdx];
+                var thisTlkInfo = thisTlk.info;
+
+                var mainlineKey = animation.mainlineKeys.FirstOrDefault(k => k.time_s == thisTlk.time_s);
+                if (mainlineKey == null)
+                {
+                    // Some of BrashMonkey's own Spriter projects (Goblin_enemy) have animations ('to_Ladder' and
+                    // 'stand_up) that have timeline keys at the very end of the animation that have no
+                    // corresponding mainline key.  We're trying to filter those cases out here.
+                    if (thisTlk.time_s < animation.length)
+                    {
+                        Debug.LogWarning($"entity: '{entityInfo.EntityName}', animation: '{animation.name}', " +
+                            $"timeline: '{timeline.name}', time: {thisTlk.time_s}, a timeline key was found but the " +
+                            "corresponding mainline key is missing.");
+                    }
+
+                    continue;
+                }
+
+                var thisBoneRef = mainlineKey.boneRefs.FirstOrDefault(r => r.timelineId == timeline.id);
+                if (thisBoneRef == null)
+                {
+                    continue; // The bone doesn't exist at this time.
+                }
+
+                if (thisTlk.time_s >= animation.length)
+                {   // The span with this key has already been checked.
+                    break;
+                }
+
+                float spanStartTime = thisTlk.time_s;
+                float spanEndTime = (tlkIdx + 1 < timeline.keys.Count)
+                    ? timeline.keys[tlkIdx + 1].time_s
+                    : animation.length;
+
+                // Guard against the bone dropping out of existance at some point during the span...
+                int spanStartMlkIdx = animation.mainlineKeys.FindIndex(k => k.time_s == spanStartTime);
+                int spanEndMlkIdx = animation.mainlineKeys.FindIndex(k => k.time_s == spanEndTime);
+
+                for (int mli = spanStartMlkIdx; mli < spanEndMlkIdx; ++mli)
+                {
+                    if (animation.mainlineKeys[mli].boneRefs.FirstOrDefault(r => r.timelineId == timeline.id) == null)
+                    {
+                        spanEndTime = animation.mainlineKeys[mli].time_s;
+                        break;
+                    }
+                }
+
+                float nextRawScaleX = (tlkIdx + 1 < timeline.keys.Count)
+                    ? timeline.keys[tlkIdx + 1].info.rawScaleX
+                    : GetFinalFrameInferredKeyValue<SpatialInfo>(timeline, x => x.rawScaleX, animation);
+
+                float nextRawScaleY = (tlkIdx + 1 < timeline.keys.Count)
+                    ? timeline.keys[tlkIdx + 1].info.rawScaleY
+                    : GetFinalFrameInferredKeyValue<SpatialInfo>(timeline, x => x.rawScaleY, animation);
+
+                bool isScaleAnimated =
+                    Mathf.Approximately(thisTlkInfo.rawScaleX, nextRawScaleX) == false ||
+                    Mathf.Approximately(thisTlkInfo.rawScaleY, nextRawScaleY) == false;
+
+                if (isScaleAnimated)
+                {
+                    if (animatedBoneScaleSpans.Count > 0 &&
+                        animatedBoneScaleSpans[animatedBoneScaleSpans.Count - 1].spanEnd == spanStartTime)
+                    {   // Extend the already existing span.
+                        var spanEntry = animatedBoneScaleSpans[animatedBoneScaleSpans.Count - 1];
+                        spanEntry.spanEnd = spanEndTime;
+
+                        animatedBoneScaleSpans[animatedBoneScaleSpans.Count - 1] = spanEntry;
+                    }
+                    else
+                    {
+                        animatedBoneScaleSpans.Add((spanStartTime, spanEndTime));
+                    }
+                }
+            }
+        }
+
+        private class AnimatedBoneScaleDescendantInfo
+        {
+            public float time_s; // The time where all these refs need a timeline key entry.
+            public Ref ancestorBoneRef; // The root of descendantBoneRefs and descendantObjectRefs.
+            public List<Ref> descendantBoneRefs;
+            public List<Ref> descendantObjectRefs;
+        }
+
+        private void HandleAnimatedBoneScaleSpans(Animation animation, Timeline timeline,
+            List<(float spanStart, float spanEnd)> animatedBoneScaleSpans)
+        {
+            List<AnimatedBoneScaleDescendantInfo> animatedBoneScaleDescendantInfos = new List<AnimatedBoneScaleDescendantInfo>();
+
+            foreach (var spanEntry in animatedBoneScaleSpans)
+            {
+                int spanStartMlkIdx = animation.mainlineKeys.FindIndex(k => k.time_s == spanEntry.spanStart);
+                int spanEndMlkIdx = animation.mainlineKeys.FindIndex(k => k.time_s == spanEntry.spanEnd);
+
+                for (int mlkIdx = spanStartMlkIdx; mlkIdx <= spanEndMlkIdx; ++mlkIdx)
+                {
+                    var mainlineKey = animation.mainlineKeys[mlkIdx];
+                    var thisBoneRef = mainlineKey.boneRefs.FirstOrDefault(r => r.timelineId == timeline.id);
+
+                    if (thisBoneRef == null)
+                    {   // The bone doesn't exist at this point-in-time.  Note that thisBoneRef can be null, but the
+                        // only valid case when it can is for the last mainline key of the span.
+                        if (mlkIdx != spanEndMlkIdx - 1)
+                        {
+                            // This should have been taken care of when the span was built so this is a programming error.
+                            Debug.LogWarning("An invalid animated bone scale time span was encountered.");
+                        }
+
+                        break;
+                    }
+
+                    var boneDescendantRefs = new List<Ref>();
+                    var objectDescendantRefs = new List<Ref>();
+
+                    // Get all of this bone's children and their children, etc. for this point in time.
+                    GetAllDescendantRefs(mainlineKey, thisBoneRef, boneDescendantRefs, objectDescendantRefs, depth: 0);
+
+                    // If any of the descendants have a timeline key at mainlineKey.time_s then ALL bones and
+                    // objects will get one as well (including the top-most bone.)
+
+                    bool boneHasTimelineKey = mainlineKey.time_s == spanEntry.spanStart || mainlineKey.time_s == spanEntry.spanEnd;
+
+                    if (!boneHasTimelineKey)
+                    {
+                        foreach (var boneDescendantRef in boneDescendantRefs)
+                        {
+                            var tl = animation.timelines.FirstOrDefault(t => t.id == boneDescendantRef.timelineId);
+                            if (tl != null)
+                            {
+                                var tlk = tl.keys.FirstOrDefault(k => k.id == boneDescendantRef.timelineKeyId);
+                                if (tlk != null && tlk.time_s == mainlineKey.time_s)
+                                {
+                                    boneHasTimelineKey = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    bool objectHasTimelineKey = false;
+
+                    if (!boneHasTimelineKey)
+                    {
+                        foreach (var objectDescendantRef in objectDescendantRefs)
+                        {
+                            var tl = animation.timelines.FirstOrDefault(t => t.id == objectDescendantRef.timelineId);
+                            if (tl != null)
+                            {
+                                var tlk = tl.keys.FirstOrDefault(k => k.id == objectDescendantRef.timelineKeyId);
+                                if (tlk != null && tlk.time_s == mainlineKey.time_s)
+                                {
+                                    objectHasTimelineKey = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (boneHasTimelineKey || objectHasTimelineKey)
+                    {   // All bones (including the top-most) and objects will need to get a key at
+                        // mainlineKey.time_s if they don't already have one.  New timeline keys and
+                        // spatialInfos/SpriteInfos will need to be created and the existing Refs in
+                        // mainlineKey.boneRefs and mainlineKey.objectRefs will need to be updated.
+                        animatedBoneScaleDescendantInfos.Add(new AnimatedBoneScaleDescendantInfo()
+                        {
+                            time_s = mainlineKey.time_s,
+                            ancestorBoneRef = thisBoneRef,
+                            descendantBoneRefs = boneDescendantRefs,
+                            descendantObjectRefs =  objectDescendantRefs
+                        });
+                    }
+                }
+            }
+
+            if (animatedBoneScaleDescendantInfos.Count > 0)
+            {
+                CreateAnimatedBoneTimelineEntries(animation, animatedBoneScaleDescendantInfos);
+            }
+        }
+
+        private void GetAllDescendantRefs(MainlineKey mlk, Ref thisBoneRef, List<Ref> boneDescendantRefs,
+            List<Ref> objectDescendantRefs, int depth)
+        {
+            if (depth++ > 100)
+            {
+                return;
+            }
+
+            var childBoneInfos = (
+                from bref in mlk.boneRefs
+                where  bref.parentRefId == thisBoneRef.id
+                select bref
+            )
+            .ToList();
+
+            boneDescendantRefs.AddRange(childBoneInfos);
+
+            var childObjectInfos = (
+                from oref in mlk.objectRefs
+                where  oref.parentRefId == thisBoneRef.id
+                select oref
+            )
+            .ToList();
+
+            objectDescendantRefs.AddRange(childObjectInfos);
+
+            foreach (var childBoneRef in childBoneInfos)
+            {
+                GetAllDescendantRefs(mlk, childBoneRef, boneDescendantRefs, objectDescendantRefs, depth);
+            }
+        }
+
+        private void CreateAnimatedBoneTimelineEntries(Animation animation,
+            List<AnimatedBoneScaleDescendantInfo> animatedBoneScaleDescendantInfos)
+        {
+            foreach (var info in animatedBoneScaleDescendantInfos)
+            {
+                CreateTimelineEntryIfNeeded(animation, info.time_s, info.ancestorBoneRef);
+
+                foreach (var boneRef in info.descendantBoneRefs)
+                {
+                    CreateTimelineEntryIfNeeded(animation, info.time_s, boneRef);
+                }
+
+                foreach (var objectRef in info.descendantObjectRefs)
+                {
+                    CreateTimelineEntryIfNeeded(animation, info.time_s, objectRef);
+                }
+            }
+        }
+
+        private void CreateTimelineEntryIfNeeded(Animation animation, float time_s, Ref theRef)
+        {
+            var timeline = animation.timelines.FirstOrDefault(t => t.id == theRef.timelineId);
+            if (timeline == null)
+            {
+                Debug.LogWarning($"Entity: '{entityInfo.EntityName}', animation: {animation.name}, could not find " +
+                    $"timeline with an id of {theRef.timelineId}.");
+                return;
+            }
+
+            var fromTlk = timeline.keys.FirstOrDefault(k => k.id == theRef.timelineKeyId);
+            if (fromTlk == null)
+            {
+                Debug.LogWarning($"Entity: '{entityInfo.EntityName}', animation: {animation.name}, " +
+                    $"timeline: {timeline.name}, could not find timeline key with an id of {theRef.timelineKeyId}.");
+                return;
+            }
+
+            if (fromTlk.time_s == time_s)
+            {
+                return; // Key already exists at time_s.
+            }
+
+            var toTlk = timeline.keys.FirstOrDefault(k => k.time_s > time_s);
+
+            if (toTlk == null)
+            {   // fromTlk was the last key of the timeline.  Normal behavior regarding its handling when creating the
+                // animation curves will take care of it.
+                return;
+            }
+
+            var newTimelineKey = fromTlk.Clone(); // This clones the info member as well, which we will keep if the curve_type is instant.
+            newTimelineKey.id = 1 + timeline.keys.Max(k => k.id);
+            newTimelineKey.time_s = time_s;
+
+            if (newTimelineKey.curve_type != CurveType.instant)
+            {   // All non-instant curve types are forced to be linear curve types.
+                newTimelineKey.curve_type = CurveType.linear;
+
+                float t = Mathf.InverseLerp(fromTlk.time_s, toTlk.time_s, time_s);
+                newTimelineKey.info = SpatialInfo.Lerp(fromTlk.info, toTlk.info, t);
+            }
+
+            int insertIdx = timeline.keys.FindIndex(k => k.time_s > time_s);
+            insertIdx = insertIdx >= 0 ? insertIdx : timeline.keys.Count;
+
+            timeline.keys.Insert(insertIdx, newTimelineKey);
+            theRef.timelineKeyId = newTimelineKey.id;
         }
 
         private static int GetTotalKeyCount(AnimationClip clip)

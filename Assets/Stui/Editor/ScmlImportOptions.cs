@@ -177,7 +177,7 @@ namespace Stui.Importing
         public float pixelsPerUnit = 100f;
         public bool directSpriteSwapping = false;
         public bool createCharacterMaps = true; // directSpriteSwapping must be false to support character maps.
-        public bool boneScaleAnimationEnabled = true;
+        public bool boneScaleAnimationEnabled = false;
 		public AnimationImportOption importOption;
     }
 }

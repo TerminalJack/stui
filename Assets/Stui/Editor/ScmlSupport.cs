@@ -316,6 +316,12 @@ namespace Stui.Importing
     {
         public Ref() { parentRefId = -1; }
 
+        public override string ToString()
+        {
+            return $"{nameof(Ref)}, id:{id}, parentRefId:{parentRefId}, timelineId:{timelineId}, " +
+                $"timelineKeyId:{timelineKeyId}, z_index:{z_index}";
+        }
+
         [XmlAttribute("parent")] public int parentRefId { get; set; } // -1==no parent - uses ScmlObject spatialInfo as parentInfo
         [XmlAttribute("timeline")] public int timelineId { get; set; }
         [XmlAttribute("key")] public int timelineKeyId { get; set; }
@@ -412,6 +418,32 @@ namespace Stui.Importing
         public virtual SpatialInfo Clone()
         {
             return (SpatialInfo)MemberwiseClone();
+        }
+
+        public static SpatialInfo Lerp(SpatialInfo from, SpatialInfo to, float t)
+        {
+            // Create and return a SpatialInfo (or SpriteInfo) object that lerps the appropriate data between the
+            // 'from' object and the 'to' object.
+            var result = from.Clone();
+
+            result._x = Mathf.Lerp(from._x, to._x, t);
+            result._y = Mathf.Lerp(from._y, to._y, t);
+            result.scale_x = Mathf.Lerp(from.sx, to.sx, t);
+            result.scale_y = Mathf.Lerp(from.sy, to.sy, t);
+            result._rawScaleX = Mathf.Lerp(from.rawScaleX, to.rawScaleX, t);
+            result._rawScaleY = Mathf.Lerp(from.rawScaleY, to.rawScaleY, t);
+            result.angle = Mathf.LerpAngle(from.angle, to.angle, t);
+            result.a = Mathf.Lerp(from.a, to.a, t);
+
+            float fromTrueScaleX = float.IsNaN(from.trueScaleX) ? 1f : from.trueScaleX;
+            float toTrueScaleX = float.IsNaN(to.trueScaleX) ? 1f : to.trueScaleX;
+            result.trueScaleX = Mathf.Lerp(fromTrueScaleX, toTrueScaleX, t);
+
+            float fromTrueScaleY = float.IsNaN(from.trueScaleY) ? 1f : from.trueScaleY;
+            float toTrueScaleY = float.IsNaN(to.trueScaleY) ? 1f : to.trueScaleY;
+            result.trueScaleY = Mathf.Lerp(fromTrueScaleY, toTrueScaleY, t);
+
+            return result;
         }
 
         // parentBoneName will be set appropriately once the data is loaded and processed.
