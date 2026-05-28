@@ -426,20 +426,28 @@ namespace Stui.Importing
             // 'from' object and the 'to' object.
             var result = from.Clone();
 
-            result._x = Mathf.Lerp(from._x, to._x, t);
-            result._y = Mathf.Lerp(from._y, to._y, t);
-            result.scale_x = Mathf.Lerp(from.sx, to.sx, t);
-            result.scale_y = Mathf.Lerp(from.sy, to.sy, t);
-            result._rawScaleX = Mathf.Lerp(from.rawScaleX, to.rawScaleX, t);
-            result._rawScaleY = Mathf.Lerp(from.rawScaleY, to.rawScaleY, t);
-            result.angle = Mathf.LerpAngle(from.angle, to.angle, t);
-            result.a = Mathf.Lerp(from.a, to.a, t);
+            if (result.haveBaked)
+            {
+                if (!result.UndoBake())
+                {
+                    Debug.LogWarning("SpatialInfo.Lerp(): UndoBake() failed.");
+                }
+            }
 
-            float fromTrueScaleX = float.IsNaN(from.trueScaleX) ? 1f : from.trueScaleX;
+            result._x = Mathf.Lerp(result._x, to._x, t);
+            result._y = Mathf.Lerp(result._y, to._y, t);
+            result.scale_x = Mathf.Lerp(result.sx, to.sx, t);
+            result.scale_y = Mathf.Lerp(result.sy, to.sy, t);
+            result._rawScaleX = Mathf.Lerp(result.rawScaleX, to.rawScaleX, t);
+            result._rawScaleY = Mathf.Lerp(result.rawScaleY, to.rawScaleY, t);
+            result.angle = Mathf.LerpAngle(result.angle, to.angle, t);
+            result.a = Mathf.Lerp(result.a, to.a, t);
+
+            float fromTrueScaleX = float.IsNaN(result.trueScaleX) ? 1f : result.trueScaleX;
             float toTrueScaleX = float.IsNaN(to.trueScaleX) ? 1f : to.trueScaleX;
             result.trueScaleX = Mathf.Lerp(fromTrueScaleX, toTrueScaleX, t);
 
-            float fromTrueScaleY = float.IsNaN(from.trueScaleY) ? 1f : from.trueScaleY;
+            float fromTrueScaleY = float.IsNaN(result.trueScaleY) ? 1f : result.trueScaleY;
             float toTrueScaleY = float.IsNaN(to.trueScaleY) ? 1f : to.trueScaleY;
             result.trueScaleY = Mathf.Lerp(fromTrueScaleY, toTrueScaleY, t);
 
@@ -538,10 +546,37 @@ namespace Stui.Importing
         [XmlAttribute] public float a { get; set; } // Alpha
 
         [XmlIgnore] public bool haveBaked = false;
+        private SpatialInfo _savedUndoData;
+
+        public bool UndoBake()
+        {
+            if (_savedUndoData != null)
+            {
+                scale_x = _savedUndoData.scale_x;
+                scale_y = _savedUndoData.scale_y;
+                _rawScaleX = _savedUndoData._rawScaleX;
+                _rawScaleY = _savedUndoData._rawScaleY;
+                trueScaleX = _savedUndoData.trueScaleX;
+                trueScaleY = _savedUndoData.trueScaleY;
+                _x = _savedUndoData._x;
+                _y = _savedUndoData._y;
+
+                haveBaked = false;
+
+                return true;
+            }
+
+            return false;
+        }
 
         // Baking will make sure all the scale values are off the bones and on the sprite instead...
-        public bool Bake(SpatialInfo parent)
+        public bool Bake(SpatialInfo parent, bool saveUndoData)
         {
+            if (saveUndoData)
+            {
+                _savedUndoData = Clone();
+            }
+
             // If either of these are still NaN at this point then we know that they had a value of 1 (the default)
             // in the .scml file.
             if (float.IsNaN(_rawScaleX)) _rawScaleX = 1f;

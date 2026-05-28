@@ -130,10 +130,10 @@ namespace Stui.EntityInfo
             //   * This animation is using baked data.
             //   * This bone/object doesn't require unbaked data.
 
-            bool advancedBoneScaleAnimationEnabled = ScmlImportOptions.options?.IsAdvancedBoneScales ?? false;
+            bool normalBoneScaleAnimationEnabled = ScmlImportOptions.options?.IsNormalBoneScales ?? true;
 
             bool isBaked =
-                !advancedBoneScaleAnimationEnabled ||
+                normalBoneScaleAnimationEnabled ||
                 animation.usesBakedSpatialData ||
                 !info.needsSpatialAdapter;
 
@@ -147,10 +147,10 @@ namespace Stui.EntityInfo
             //   * Transform if this bone/object doesn't require unbaked data.
             //   * Otherwise, a SpatialAdapter is used.
 
-            bool advancedBoneScaleAnimationEnabled = ScmlImportOptions.options?.IsAdvancedBoneScales ?? false;
+            bool normalBoneScaleAnimationEnabled = ScmlImportOptions.options?.IsNormalBoneScales ?? true;
 
             bool useTransform =
-                !advancedBoneScaleAnimationEnabled ||
+                normalBoneScaleAnimationEnabled ||
                 !info.needsSpatialAdapter;
 
             return useTransform;
@@ -447,7 +447,7 @@ namespace Stui.EntityInfo
 
                 if (tlks[0].timeZeroAuxKey != null)
                 {
-                    var auxKey = tlks[0].timeZeroAuxKey;
+                    var auxKey = tlks[0].timeZeroAuxKey.Clone();
                     auxKey.time_s = item.animation.length + 1f;
 
                     tlks.Add(auxKey);
@@ -502,7 +502,7 @@ namespace Stui.EntityInfo
 
                     if (tlks[0].timeZeroAuxKey != null)
                     {
-                        var auxKey = tlks[0].timeZeroAuxKey;
+                        var auxKey = tlks[0].timeZeroAuxKey.Clone();
                         auxKey.time_s = boneScaleInfo.animation.length + 1f;
 
                         tlks.Add(auxKey);

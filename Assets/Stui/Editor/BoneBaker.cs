@@ -159,6 +159,12 @@ namespace Stui.Animations
                 int spanStartMlkIdx = animation.mainlineKeys.FindIndex(k => k.time_s == spanEntry.spanStart);
                 int spanEndMlkIdx = animation.mainlineKeys.FindIndex(k => k.time_s == spanEntry.spanEnd);
 
+                if (spanEndMlkIdx < 0)
+                {   // The span goes to the end of the animation but there isn't a mainline key at that time so use
+                    // the last mainline key.
+                    spanEndMlkIdx = animation.mainlineKeys.Count - 1;
+                }
+
                 for (int mlkIdx = spanStartMlkIdx; mlkIdx <= spanEndMlkIdx; ++mlkIdx)
                 {
                     var mainlineKey = animation.mainlineKeys[mlkIdx];
@@ -346,6 +352,13 @@ namespace Stui.Animations
 
                 float t = Mathf.InverseLerp(fromTlk.time_s, toTime_s, time_s);
                 newTimelineKey.info = SpatialInfo.Lerp(fromTlk.info, toInfo, t);
+            }
+            else if (newTimelineKey.info.haveBaked)
+            {
+                if (!newTimelineKey.info.UndoBake())
+                {
+                    Debug.LogWarning("BoneBaker.CreateTimelineEntryIfNeeded(): UndoBake() failed.");
+                }
             }
 
             int insertIdx = timeline.keys.FindIndex(k => k.time_s > time_s);

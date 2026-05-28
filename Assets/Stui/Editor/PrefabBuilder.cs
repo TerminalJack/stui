@@ -868,7 +868,7 @@ namespace Stui.Prefabs
                         {
                             SpatialInfo parentInfo;
                             defaultBones.TryGetValue(parentName, out parentInfo); // 'parentName' may be grandparent if a virtual parent was created.
-                            spatialInfo.Bake(parentInfo);
+                            spatialInfo.Bake(parentInfo, saveUndoData: true);
                         }
 
                         // The transform gets initialized with the baked or unbaked, regardless.  If a Spatial Adapter
@@ -999,7 +999,7 @@ namespace Stui.Prefabs
                 {
                     SpatialInfo parentInfo;
                     defaultBones.TryGetValue(parentName, out parentInfo); // 'parentName' may be grandparent if a virtual parent was created.
-                    spriteInfo.Bake(parentInfo);
+                    spriteInfo.Bake(parentInfo, saveUndoData: true);
                 }
 
                 // If this sprite (for any animation of the entity) has one or more non-default
@@ -1198,7 +1198,7 @@ namespace Stui.Prefabs
                 {
                     SpatialInfo parentInfo;
                     defaultBones.TryGetValue(parentName, out parentInfo); // 'parentName' may be grandparent if a virtual parent was created.
-                    pointInfo.Bake(parentInfo);
+                    pointInfo.Bake(parentInfo, saveUndoData: true);
                 }
 
                 // The transform gets initialized with the baked or unbaked, regardless.  If a Spatial Adapter
@@ -1284,7 +1284,7 @@ namespace Stui.Prefabs
                 {
                     SpatialInfo parentInfo;
                     defaultBones.TryGetValue(parentName, out parentInfo); // 'parentName' may be grandparent if a virtual parent was created.
-                    boxInfo.Bake(parentInfo);
+                    boxInfo.Bake(parentInfo, saveUndoData: true);
                 }
 
                 // The transform gets initialized with the baked or unbaked, regardless.  If a Spatial Adapter

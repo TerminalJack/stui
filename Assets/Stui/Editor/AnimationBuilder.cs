@@ -2036,7 +2036,7 @@ namespace Stui.Animations
                         parentInfo = parentKeyEntry?.info;
                     }
 
-                    info.Bake(parentInfo);
+                    info.Bake(parentInfo, saveUndoData: false);
                 }
 
                 if (spatialAdapter == null)
