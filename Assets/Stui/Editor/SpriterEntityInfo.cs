@@ -130,10 +130,10 @@ namespace Stui.EntityInfo
             //   * This animation is using baked data.
             //   * This bone/object doesn't require unbaked data.
 
-            bool boneScaleAnimationEnabled = ScmlImportOptions.options?.boneScaleAnimationEnabled ?? false;
+            bool advancedBoneScaleAnimationEnabled = ScmlImportOptions.options?.IsAdvancedBoneScales ?? false;
 
             bool isBaked =
-                !boneScaleAnimationEnabled ||
+                !advancedBoneScaleAnimationEnabled ||
                 animation.usesBakedSpatialData ||
                 !info.needsSpatialAdapter;
 
@@ -147,10 +147,10 @@ namespace Stui.EntityInfo
             //   * Transform if this bone/object doesn't require unbaked data.
             //   * Otherwise, a SpatialAdapter is used.
 
-            bool boneScaleAnimationEnabled = ScmlImportOptions.options?.boneScaleAnimationEnabled ?? false;
+            bool advancedBoneScaleAnimationEnabled = ScmlImportOptions.options?.IsAdvancedBoneScales ?? false;
 
             bool useTransform =
-                !boneScaleAnimationEnabled ||
+                !advancedBoneScaleAnimationEnabled ||
                 !info.needsSpatialAdapter;
 
             return useTransform;
@@ -162,10 +162,10 @@ namespace Stui.EntityInfo
             //   * Bone Scale Animation is enabled by the user.
             //   * and, the bone was marked as needing a scale tracker.
 
-            bool boneScaleAnimationEnabled = ScmlImportOptions.options?.boneScaleAnimationEnabled ?? false;
+            bool advancedBoneScaleAnimationEnabled = ScmlImportOptions.options?.IsAdvancedBoneScales ?? false;
 
             bool useScaleTracker =
-                boneScaleAnimationEnabled &&
+                advancedBoneScaleAnimationEnabled &&
                 info.needsScaleTracker;
 
             return useScaleTracker;
@@ -262,7 +262,7 @@ namespace Stui.EntityInfo
 
             if (buildCtx.IsCanceled) { yield break; }
             yield return $"{buildCtx.MessagePrefix}, checking for animated bone scales";
-            CheckForAnimatedBoneScales(entity);
+            CheckForAnimatedBoneScales(entity); // Run this only after running PreprocessPivotsAndParents().
 
             if (buildCtx.IsCanceled) { yield break; }
             yield return $"{buildCtx.MessagePrefix}, checking for bones that use alpha";
@@ -400,6 +400,8 @@ namespace Stui.EntityInfo
 
         private void CheckForAnimatedBoneScales(Entity entity)
         {
+            const float minPercentThreshold = 0.02f; // +/- 2%.
+
             var boneScaleInfos =
                 (from anim in entity.animations
                  from mlk in anim.mainlineKeys
@@ -434,44 +436,29 @@ namespace Stui.EntityInfo
             //
             //     * Pivot changes.
             //     * Parent changes.
-            //     * Instant changes.  (Covered by the case below.)
-            //     * Changes that happen faster than ~24 fps.  (Too fast to bother tweening.)
-            //     * Changes in scale that are too subtle to (hopefully) notice.
+            //     * Instant changes.
+            //     * Changes in scale that are too subtle to (hopefully) notice
             //
+            // Note that pivot and parent changes are covered by the curve type being instant.
+
             boneScaleInfos.RemoveAll(item =>
             {
-                const float minDeltaTime = 1f / 24f;
-                const float minPercentThreshold = 0.05f; // +/- 5%.
-
                 var tlks = item.timeline.keys.ToList(); // We need to work with our own copy of the list.
 
-                if (tlks.Count >= 3 && tlks[0].time_s == tlks[1].time_s)
-                {   // The first two keys have the same time so this is a pivot and/or parent change.  Put a copy of the
-                    // key that is at index 0 at the end of the keys and remove it.
-                    var first = tlks[0].Clone();
-                    first.time_s = item.animation.length + 1f;
+                if (tlks[0].timeZeroAuxKey != null)
+                {
+                    var auxKey = tlks[0].timeZeroAuxKey;
+                    auxKey.time_s = item.animation.length + 1f;
 
-                    tlks.RemoveAt(0);
-                    tlks.Add(first);
+                    tlks.Add(auxKey);
                 }
-
-                // Check each of the spans between pivot/parent changes and instant/nearly instant changes and make sure
-                // the scales are the same or nearly the same for all of the keys in the span.  A new span starts when
-                // either two keys are found with the same time (a pivot and/or parent change) or the difference of
-                // their times is < minDeltaTime, a time too fast to bother tweening.
-                bool newSpan = true;
 
                 for (int i = 1; i < tlks.Count; ++i)
                 {
                     var prevKey = tlks[i - 1];
                     var thisKey = tlks[i];
 
-                    double prevKeyTime = System.Math.Round(prevKey.time_s, 4);
-                    double thisKeyTime = System.Math.Round(thisKey.time_s, 4);
-
-                    newSpan = thisKeyTime - prevKeyTime < minDeltaTime;
-
-                    if (!newSpan)
+                    if (prevKey.curve_type != CurveType.instant)
                     {
                         bool scaleChangeNoticable =
                             ScaleChangedEnough(prevKey.info.scale_x, thisKey.info.scale_x, minPercentThreshold) ||
@@ -497,18 +484,89 @@ namespace Stui.EntityInfo
                 Debug.Log($"{prefix}Entity '{entity.name}' has one or more animations ({animatonNamesStr}) that have bones " +
                     "with animated scales.");
 
+                bool hasNonlinearCurveTypes = false;
+                bool hasScaleFlips = false;
+
                 foreach (var boneScaleInfo in boneScaleInfos)
                 {
                     boneScaleInfo.animation.hasAnimatedBoneScales = true;
                     boneInfos[boneScaleInfo.boneName].needsSpatialAdapter = true;
 
                     Log($"    Animation '{boneScaleInfo.animation.name}', bone name '{boneScaleInfo.boneName}' has one or " +
-                        "more keys with the following (different) scales:");
+                        "more keys with animated scales:");
 
-                    foreach (var scaleInfo in boneScaleInfo.scales)
+                    // For each of the scale changes, list the time, curve type, scales, and make note when the
+                    // scale flips.
+
+                    var tlks = boneScaleInfo.timeline.keys.ToList(); // We need to work with our own copy of the list.
+
+                    if (tlks[0].timeZeroAuxKey != null)
                     {
-                        Log($"        scale x: {scaleInfo.scaleX}, scale y: {scaleInfo.scaleY}");
+                        var auxKey = tlks[0].timeZeroAuxKey;
+                        auxKey.time_s = boneScaleInfo.animation.length + 1f;
+
+                        tlks.Add(auxKey);
                     }
+
+                    for (int i = 1; i < tlks.Count; ++i)
+                    {
+                        var prevKey = tlks[i - 1];
+                        var thisKey = tlks[i];
+
+                        bool scaleChangeNoticable =
+                            ScaleChangedEnough(prevKey.info.scale_x, thisKey.info.scale_x, minPercentThreshold) ||
+                            ScaleChangedEnough(prevKey.info.scale_y, thisKey.info.scale_y, minPercentThreshold);
+
+                        var curveType = prevKey.curve_type;
+
+                        if (curveType != CurveType.instant && scaleChangeNoticable)
+                        {
+                            string notes = "";
+
+                            if (curveType != CurveType.linear)
+                            {
+                                hasNonlinearCurveTypes = true;
+                                notes = "Non-linear or non-instant curve type!";
+                            }
+
+                            string scalesStr = $"({prevKey.info.scale_x}, {prevKey.info.scale_y}) -> " +
+                                $"({thisKey.info.scale_x}, {thisKey.info.scale_y})";
+
+                            bool isFlip =
+                                Mathf.Sign(prevKey.info.scale_x) != Mathf.Sign(thisKey.info.scale_x) ||
+                                Mathf.Sign(prevKey.info.scale_y) != Mathf.Sign(thisKey.info.scale_y);
+
+                            if (isFlip)
+                            {
+                                hasScaleFlips = true;
+
+                                if (!string.IsNullOrEmpty(notes))
+                                {
+                                    notes += ", ";
+                                }
+
+                                notes += "Scale flip!";
+                            }
+
+                            if (!string.IsNullOrEmpty(notes))
+                            {
+                                notes = "<-- " + notes;;
+                            }
+
+                            Log($"        time span: {prevKey.time_s:F3} -> {thisKey.time_s:F3}, " +
+                                $"curve type: {prevKey.curve_type}, scales: {scalesStr}  {notes}");
+                        }
+                    }
+                }
+
+                if (hasNonlinearCurveTypes)
+                {   // Use regular logging.  The user may need to use advanced animated bone scale support.
+                    Debug.Log($"{prefix}Entity '{entity.name}' has one or more animated bones with non-linear curve types.");
+                }
+
+                if (hasScaleFlips)
+                {   // Use regular logging.  The user may need to use advanced animated bone scale support.
+                    Debug.Log($"{prefix}Entity '{entity.name}' has one or more animated bone scale flips.");
                 }
 
                 var namesOfBonesWithAnimatedScales = boneScaleInfos.Select(i => i.boneName).Distinct().OrderBy(n => n).ToList();

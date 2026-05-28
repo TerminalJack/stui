@@ -179,8 +179,8 @@ namespace Stui.Prefabs
                 animator.runtimeAnimatorController = controller;
             }
 
-            bool boneScaleSettingEnabled = ScmlImportOptions.options?.boneScaleAnimationEnabled ?? false;
-            bool needSpatialController = boneScaleSettingEnabled && entity.animations.Exists(a => a.hasAnimatedBoneScales);
+            bool advancedBoneScaleSettingEnabled = ScmlImportOptions.options?.IsAdvancedBoneScales ?? false;
+            bool needSpatialController = advancedBoneScaleSettingEnabled && entity.animations.Exists(a => a.hasAnimatedBoneScales);
 
             SpatialController spatialController;
             instance.TryGetComponent(out spatialController);
@@ -265,7 +265,7 @@ namespace Stui.Prefabs
                 if (buildCtx.IsCanceled) { yield break; }
                 yield return $"{buildCtx.MessagePrefix}: processing";
 
-                animation.usesBakedSpatialData = !animation.hasAnimatedBoneScales || !boneScaleSettingEnabled;
+                animation.usesBakedSpatialData = !animation.hasAnimatedBoneScales || !advancedBoneScaleSettingEnabled;
 
                 if (firstAnim && !animation.usesBakedSpatialData && spatialController != null)
                 {

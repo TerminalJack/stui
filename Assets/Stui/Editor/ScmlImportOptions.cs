@@ -30,11 +30,13 @@ namespace Stui.Importing
             "feature.";
 
         private static readonly string _animateBoneScalesTooltip =
-            "Animate Bone Scales: If your Spriter project uses this feature then enabling this option will " +
-            "create the necessary components and animation curves to support it.  Otherwise, bone scales will be " +
-            "baked-in for each keyframe.  This is more performant but could result in animations that do not " +
-            "match Spriter's playback.  Note that if a Spriter project doesn't use animated bone scales then " +
-            "enabling this option will have no effect on performance.";
+            "Animated Bone Scales: If your Spriter project uses this feature then selecting 'Advanced' will " +
+            "create the necessary components and animation curves to support it at the highest visual quality.  " +
+            "Otherwise, the setting of 'Normal' will cause bone scales to be baked-in for each keyframe.  This is " +
+            "more performant but could result in animations that do not match Spriter's playback.  If any bones " +
+            "use non-linear curves and/or flip the scale across either the x- or y-axis, then 'Advanced' will " +
+            "likely be necessary.  Note that if a Spriter project doesn't use animated bone scales then " +
+            "enabling the 'Advanced' setting will have the same effect as using the 'Normal' setting.";
 
         private static readonly string _animationImportStyleTooltip =
             "Animation Import Style: Where to store animation clips.  They can be stored in the prefab or in a " +
@@ -54,7 +56,7 @@ namespace Stui.Importing
             tooltip: _createCharacterMapsTooltip);
 
         private static readonly GUIContent _animateBoneScalesContent = new GUIContent(
-            text: "Animate Bone Scales",
+            text: "Animated Bone Scales",
             tooltip: _animateBoneScalesTooltip);
 
         private static readonly GUIContent _animationImportStyleContent = new GUIContent(
@@ -64,7 +66,7 @@ namespace Stui.Importing
         void OnEnable()
         {
             titleContent = new GUIContent("Spriter Import Options");
-            minSize = new Vector2(400, 270);
+            minSize = new Vector2(400, 310);
         }
 
         void OnGUI()
@@ -92,8 +94,10 @@ namespace Stui.Importing
                 EditorGUILayout.Toggle(_createCharacterMapsContent, ScmlImportOptions.options.createCharacterMaps);
 
             GUI.SetNextControlName("BoneScales");
-            ScmlImportOptions.options.boneScaleAnimationEnabled =
-                EditorGUILayout.Toggle(_animateBoneScalesContent, ScmlImportOptions.options.boneScaleAnimationEnabled);
+            ScmlImportOptions.options.animatedBoneScaleType =
+                (ScmlImportOptions.AnimatedBoneScaleType)EditorGUILayout.EnumPopup(
+                    _animateBoneScalesContent,
+                    ScmlImportOptions.options.animatedBoneScaleType);
 
             GUI.enabled = true;
 
@@ -106,7 +110,7 @@ namespace Stui.Importing
             EditorGUILayout.Space(8);
 
             string helpMsg = "Choose your desired settings then click 'Import' to proceed.  Click 'Cancel' to " +
-                "close this window without importing.";
+                "close this window without importing.  Tab to each field to show more information about the setting.";
 
             switch (GUI.GetNameOfFocusedControl())
             {
@@ -173,11 +177,15 @@ namespace Stui.Importing
         public static ScmlImportOptions options = null;
 
 	    public enum AnimationImportOption : byte { NestedInPrefab, SeparateFolder }
+	    public enum AnimatedBoneScaleType : byte { Normal, Advanced}
+
+        public bool IsNormalBoneScales => animatedBoneScaleType == AnimatedBoneScaleType.Normal;
+        public bool IsAdvancedBoneScales => animatedBoneScaleType == AnimatedBoneScaleType.Advanced;
 
         public float pixelsPerUnit = 100f;
         public bool directSpriteSwapping = false;
         public bool createCharacterMaps = true; // directSpriteSwapping must be false to support character maps.
-        public bool boneScaleAnimationEnabled = false;
+        public AnimatedBoneScaleType animatedBoneScaleType = AnimatedBoneScaleType.Normal;
 		public AnimationImportOption importOption;
     }
 }
