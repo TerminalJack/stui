@@ -427,10 +427,16 @@ namespace Stui.Importing
             var result = from.Clone();
 
             if (result.haveBaked)
-            {
+            {   // The BoneBaker exclusively uses Lerp() and it (the BoneBaker) should run before anything has been
+                // baked so this is unexpected (but recoverable assuming the undo doesn't fail.)
                 if (!result.UndoBake())
                 {
                     Debug.LogWarning("SpatialInfo.Lerp(): UndoBake() failed.");
+                }
+                else
+                {
+                    Debug.LogWarning("SpatialInfo.Lerp(): Had to undo a bake.  This is not expected and may " +
+                        "indicate a programming error.");
                 }
             }
 
@@ -546,20 +552,20 @@ namespace Stui.Importing
         [XmlAttribute] public float a { get; set; } // Alpha
 
         [XmlIgnore] public bool haveBaked = false;
-        private SpatialInfo _savedUndoData;
+        private SpatialInfo _savedUndoBakeData;
 
         public bool UndoBake()
         {
-            if (_savedUndoData != null)
+            if (_savedUndoBakeData != null)
             {
-                scale_x = _savedUndoData.scale_x;
-                scale_y = _savedUndoData.scale_y;
-                _rawScaleX = _savedUndoData._rawScaleX;
-                _rawScaleY = _savedUndoData._rawScaleY;
-                trueScaleX = _savedUndoData.trueScaleX;
-                trueScaleY = _savedUndoData.trueScaleY;
-                _x = _savedUndoData._x;
-                _y = _savedUndoData._y;
+                scale_x = _savedUndoBakeData.scale_x;
+                scale_y = _savedUndoBakeData.scale_y;
+                _rawScaleX = _savedUndoBakeData._rawScaleX;
+                _rawScaleY = _savedUndoBakeData._rawScaleY;
+                trueScaleX = _savedUndoBakeData.trueScaleX;
+                trueScaleY = _savedUndoBakeData.trueScaleY;
+                _x = _savedUndoBakeData._x;
+                _y = _savedUndoBakeData._y;
 
                 haveBaked = false;
 
@@ -570,11 +576,11 @@ namespace Stui.Importing
         }
 
         // Baking will make sure all the scale values are off the bones and on the sprite instead...
-        public bool Bake(SpatialInfo parent, bool saveUndoData)
+        public bool Bake(SpatialInfo parent)
         {
-            if (saveUndoData)
+            if (_savedUndoBakeData == null)
             {
-                _savedUndoData = Clone();
+                _savedUndoBakeData = Clone();
             }
 
             // If either of these are still NaN at this point then we know that they had a value of 1 (the default)

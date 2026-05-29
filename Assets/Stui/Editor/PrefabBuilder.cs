@@ -258,6 +258,8 @@ namespace Stui.Prefabs
 
             ProcessEntitySounds(instance.transform, entityInfo);
 
+            bool bakeAnimatedBoneScales = ScmlImportOptions.options?.IsNormalBoneScales ?? true;
+
             foreach (var animation in entity.animations)
             {
                 buildCtx.AnimationName = animation.name;
@@ -273,9 +275,15 @@ namespace Stui.Prefabs
                 }
 
                 var timelines = new Dictionary<int, Timeline>();
+
                 foreach (var timeline in animation.timelines) // Timelines hold all the critical data such as positioning and graphics used
                 {
                     timelines[timeline.id] = timeline;
+
+                    if (entityInfo.boneInfos.GetOrDefault(timeline.name) != null && bakeAnimatedBoneScales)
+                    {   // This is a bone and animated bone scales are being baked.  Bake them for this timeline.
+                        BoneBaker.BakeAnimatedBoneScales(animation, timeline, entityInfo);
+                    }
                 }
 
                 foreach (var key in animation.mainlineKeys)
@@ -827,127 +835,159 @@ namespace Stui.Prefabs
             Animation animation, Dictionary<int, Timeline> timelines, MainlineKey key,
             Dictionary<string, SpatialInfo> defaultBones, SpriterEntityInfo entityInfo)
         {
+            var processedBoneNames = new HashSet<string> { "rootTransform" };
             var boneRefs = new Queue<Ref>(key.boneRefs);
+            int deadlockCounter = 0;
 
             while (boneRefs.Count > 0)
             {
-                var bone = boneRefs.Dequeue();
-                var timeline = timelines[bone.timelineId];
-                parents[bone.id] = timeline.name;
+                var boneRef = boneRefs.Dequeue();
 
-                if (!transforms.ContainsKey(timeline.name))
-                {   //We only need to go through this once, so ignore it if it's already in the dict
+                var timeline = timelines[boneRef.timelineId];
+                string boneName = timeline.name;
+                parents[boneRef.id] = boneName;
 
-                    SpriterBoneInfo spriterBoneInfo;
-                    entityInfo.boneInfos.TryGetValue(timeline.name, out spriterBoneInfo);
+                if (processedBoneNames.Contains(boneName))
+                {
+                    continue;
+                }
 
-                    if (spriterBoneInfo == null || spriterBoneInfo.type != ObjectType.bone)
+                var parentBoneNames = timeline.keys.Select(k => k.info.parentBoneName).Distinct().ToList();
+                bool parentsProcessed = parentBoneNames.All(processedBoneNames.Contains);
+                bool deadlocked = deadlockCounter > boneRefs.Count;
+
+                if (parentsProcessed || deadlocked)
+                {
+                    if (deadlocked)
                     {
-                        Debug.LogWarning($"Stui: ProcessBones() was unable to find bone info for bone '{timeline.name}'.");
-                        continue;
+                        string parentBoneNamesStr = string.Join(", ", parentBoneNames.Select(n => $"'{n}'"));
+                        string processedBoneNamesStr = string.Join(", ", processedBoneNames.Select(n => $"'{n}'"));
+                        Debug.LogWarning($"PrefabBuilder: Deadlock detected.  timeline: {timeline.name}, " +
+                            $"parentBoneNames: {parentBoneNamesStr}, processedBoneNames: {processedBoneNamesStr}");
                     }
 
-                    if (parents.ContainsKey(bone.parentRefId))
-                    {   //If the parent cannot be found, it will probably be found later, so save it
-                        var parentName = parents[bone.parentRefId];
-                        var parentTransform = transforms[parentName];
+                    deadlockCounter = 0;
+                    processedBoneNames.Add(boneName);
 
-                        ProcessVirtualParent(parentName, ref parentTransform, spriterBoneInfo);
-
-                        var child = parentTransform.Find(timeline.name); //Try to find the child transform if it exists
-                        if (child == null)
-                        {   //Or create a new one
-                            child = new GameObject(timeline.name).transform;
-                            child.SetParent(parentTransform);
-                        }
-
-                        transforms[timeline.name] = child;
-                        var spatialInfo = defaultBones[timeline.name] = timeline.keys.Find(x => x.id == bone.timelineKeyId).info;
-
-                        if (!spatialInfo.haveBaked && SpriterEntityInfo.IsBakedBoneOrObject(spriterBoneInfo, animation))
-                        {
-                            SpatialInfo parentInfo;
-                            defaultBones.TryGetValue(parentName, out parentInfo); // 'parentName' may be grandparent if a virtual parent was created.
-                            spatialInfo.Bake(parentInfo, saveUndoData: true);
-                        }
-
-                        // The transform gets initialized with the baked or unbaked, regardless.  If a Spatial Adapter
-                        // is used then it will initialize the position and scale when it is enabled.
-                        child.localPosition = new Vector3(spatialInfo.x, spatialInfo.y, 0f);
-                        child.localRotation = Quaternion.Euler(0, 0, spatialInfo.angle);
-                        child.localScale = new Vector3(spatialInfo.scale_x, spatialInfo.scale_y, 1f);
-
-                        SpatialAdapter spatialAdapter;
-                        child.gameObject.TryGetComponent(out spatialAdapter);
-
-                        if (SpriterEntityInfo.UseTransformForPositionAndScale(spriterBoneInfo))
-                        {   // The Transform's Position and Scale are always used for animating this bone and they
-                            // will always be baked.  The game object may also need a ScaleTracker if any of its
-                            // decendants are animated bones.
-
-                            if (spatialAdapter != null)
-                            {
-                                DestroyImmediate(spatialAdapter);
-                            }
-
-                            ScaleTracker scaleTracker;
-                            child.gameObject.TryGetComponent(out scaleTracker);
-
-                            if (SpriterEntityInfo.BoneUsesScaleTracker(spriterBoneInfo))
-                            {
-                                if (scaleTracker == null)
-                                {
-                                    scaleTracker = child.gameObject.AddComponent<ScaleTracker>();
-                                }
-
-                                scaleTracker.RawScale = new Vector2(spatialInfo.rawScaleX, spatialInfo.rawScaleY);
-
-                                spriterBoneInfo.scaleTracker = scaleTracker;
-                            }
-                            else if (scaleTracker != null)
-                            {
-                                DestroyImmediate(scaleTracker);
-                            }
-                        }
-                        else
-                        {   // The SpatialAdapter's Position and Scale are always used for animating this bone.  The
-                            // position and scale may be baked or not, depending on the animation.
-                            if (spatialAdapter == null)
-                            {
-                                spatialAdapter = child.gameObject.AddComponent<SpatialAdapter>();
-                            }
-
-                            spatialAdapter.Position = new Vector2(spatialInfo.x, spatialInfo.y);
-                            spatialAdapter.Scale = new Vector2(spatialInfo.scale_x, spatialInfo.scale_y);
-
-                            spriterBoneInfo.spatialAdapter = spatialAdapter;
-                        }
-
-                        AlphaController alphaController;
-                        child.gameObject.TryGetComponent(out alphaController);
-
-                        if (spriterBoneInfo.hasAlphaController)
-                        {
-                            if (alphaController == null)
-                            {
-                                alphaController = child.gameObject.AddComponent<AlphaController>();
-                            }
-
-                            alphaController.Alpha = spatialInfo.a;
-                        }
-                        else if (alphaController != null)
-                        {
-                            DestroyImmediate(alphaController);
-                        }
-
-                        ProcessObjectScopedMetadata(child, spriterBoneInfo);
-                    }
-                    else
+                    if (!transforms.ContainsKey(timeline.name))
                     {
-                        boneRefs.Enqueue(bone);
+                        ProcessBone(parents, transforms, animation, defaultBones, entityInfo, timeline, boneRef);
                     }
                 }
+                else
+                {
+                    deadlockCounter++;
+                    boneRefs.Enqueue(boneRef);
+                }
             }
+        }
+
+        private void ProcessBone(Dictionary<int, string> parents, Dictionary<string, Transform> transforms,
+            Animation animation, Dictionary<string, SpatialInfo> defaultBones, SpriterEntityInfo entityInfo,
+            Timeline timeline, Ref boneRef)
+        {
+            var parentName = parents[boneRef.parentRefId];
+            var parentTransform = transforms[parentName];
+
+            SpriterBoneInfo spriterBoneInfo;
+            entityInfo.boneInfos.TryGetValue(timeline.name, out spriterBoneInfo);
+
+            if (spriterBoneInfo == null || spriterBoneInfo.type != ObjectType.bone)
+            {
+                Debug.LogWarning($"Stui: ProcessBones() was unable to find bone info for bone '{timeline.name}'.");
+                return;
+            }
+
+            ProcessVirtualParent(parentName, ref parentTransform, spriterBoneInfo);
+
+            var child = parentTransform.Find(timeline.name); //Try to find the child transform if it exists
+            if (child == null)
+            {   //Or create a new one
+                child = new GameObject(timeline.name).transform;
+                child.SetParent(parentTransform);
+            }
+
+            transforms[timeline.name] = child;
+
+            var spatialInfo = defaultBones[timeline.name] = timeline.keys.Find(x => x.id == boneRef.timelineKeyId).info;
+
+            if (!spatialInfo.haveBaked && SpriterEntityInfo.IsBakedBoneOrObject(spriterBoneInfo, animation))
+            {
+                SpatialInfo parentInfo;
+                defaultBones.TryGetValue(parentName, out parentInfo); // 'parentName' may be grandparent if a virtual parent was created.
+                spatialInfo.Bake(parentInfo);
+            }
+
+            // The transform gets initialized with the baked or unbaked, regardless.  If a Spatial Adapter
+            // is used then it will initialize the position and scale when it is enabled.
+            child.localPosition = new Vector3(spatialInfo.x, spatialInfo.y, 0f);
+            child.localRotation = Quaternion.Euler(0, 0, spatialInfo.angle);
+            child.localScale = new Vector3(spatialInfo.scale_x, spatialInfo.scale_y, 1f);
+
+            SpatialAdapter spatialAdapter;
+            child.gameObject.TryGetComponent(out spatialAdapter);
+
+            if (SpriterEntityInfo.UseTransformForPositionAndScale(spriterBoneInfo))
+            {   // The Transform's Position and Scale are always used for animating this bone and they
+                // will always be baked.  The game object may also need a ScaleTracker if any of its
+                // decendants are animated bones.
+
+                if (spatialAdapter != null)
+                {
+                    DestroyImmediate(spatialAdapter);
+                }
+
+                ScaleTracker scaleTracker;
+                child.gameObject.TryGetComponent(out scaleTracker);
+
+                if (SpriterEntityInfo.BoneUsesScaleTracker(spriterBoneInfo))
+                {
+                    if (scaleTracker == null)
+                    {
+                        scaleTracker = child.gameObject.AddComponent<ScaleTracker>();
+                    }
+
+                    scaleTracker.RawScale = new Vector2(spatialInfo.rawScaleX, spatialInfo.rawScaleY);
+
+                    spriterBoneInfo.scaleTracker = scaleTracker;
+                }
+                else if (scaleTracker != null)
+                {
+                    DestroyImmediate(scaleTracker);
+                }
+            }
+            else
+            {   // The SpatialAdapter's Position and Scale are always used for animating this bone.  The
+                // position and scale may be baked or not, depending on the animation.
+                if (spatialAdapter == null)
+                {
+                    spatialAdapter = child.gameObject.AddComponent<SpatialAdapter>();
+                }
+
+                spatialAdapter.Position = new Vector2(spatialInfo.x, spatialInfo.y);
+                spatialAdapter.Scale = new Vector2(spatialInfo.scale_x, spatialInfo.scale_y);
+
+                spriterBoneInfo.spatialAdapter = spatialAdapter;
+            }
+
+            AlphaController alphaController;
+            child.gameObject.TryGetComponent(out alphaController);
+
+            if (spriterBoneInfo.hasAlphaController)
+            {
+                if (alphaController == null)
+                {
+                    alphaController = child.gameObject.AddComponent<AlphaController>();
+                }
+
+                alphaController.Alpha = spatialInfo.a;
+            }
+            else if (alphaController != null)
+            {
+                DestroyImmediate(alphaController);
+            }
+
+            ProcessObjectScopedMetadata(child, spriterBoneInfo);
         }
 
         private void ProcessSprites(Dictionary<int, string> parents, Dictionary<string, Transform> transforms,
@@ -999,7 +1039,7 @@ namespace Stui.Prefabs
                 {
                     SpatialInfo parentInfo;
                     defaultBones.TryGetValue(parentName, out parentInfo); // 'parentName' may be grandparent if a virtual parent was created.
-                    spriteInfo.Bake(parentInfo, saveUndoData: true);
+                    spriteInfo.Bake(parentInfo);
                 }
 
                 // If this sprite (for any animation of the entity) has one or more non-default
@@ -1198,7 +1238,7 @@ namespace Stui.Prefabs
                 {
                     SpatialInfo parentInfo;
                     defaultBones.TryGetValue(parentName, out parentInfo); // 'parentName' may be grandparent if a virtual parent was created.
-                    pointInfo.Bake(parentInfo, saveUndoData: true);
+                    pointInfo.Bake(parentInfo);
                 }
 
                 // The transform gets initialized with the baked or unbaked, regardless.  If a Spatial Adapter
@@ -1284,7 +1324,7 @@ namespace Stui.Prefabs
                 {
                     SpatialInfo parentInfo;
                     defaultBones.TryGetValue(parentName, out parentInfo); // 'parentName' may be grandparent if a virtual parent was created.
-                    boxInfo.Bake(parentInfo, saveUndoData: true);
+                    boxInfo.Bake(parentInfo);
                 }
 
                 // The transform gets initialized with the baked or unbaked, regardless.  If a Spatial Adapter

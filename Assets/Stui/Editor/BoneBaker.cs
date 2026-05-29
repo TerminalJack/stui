@@ -354,10 +354,16 @@ namespace Stui.Animations
                 newTimelineKey.info = SpatialInfo.Lerp(fromTlk.info, toInfo, t);
             }
             else if (newTimelineKey.info.haveBaked)
-            {
+            {   // The BoneBaker should run before anything has been baked so this is unexpected (but recoverable
+                // assuming the undo doesn't fail.)
                 if (!newTimelineKey.info.UndoBake())
                 {
                     Debug.LogWarning("BoneBaker.CreateTimelineEntryIfNeeded(): UndoBake() failed.");
+                }
+                else
+                {
+                    Debug.LogWarning("BoneBaker.CreateTimelineEntryIfNeeded(): Had to undo a bake.  This is not " +
+                        "expected and may indicate a programming error.");
                 }
             }
 

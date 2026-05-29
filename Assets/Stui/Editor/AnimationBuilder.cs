@@ -104,11 +104,10 @@ namespace Stui.Animations
             if (buildCtx.IsCanceled) { yield break; }
             yield return $"{buildCtx.MessagePrefix}, creating animation clip '{clip.name}'";
 
-            // This Dictionary will shrink in size for every transform that is considered "used".
+            // This Dictionary will shrink in size for every transform (aka timeline) that is used in the animation.
             var pendingTransforms = new Dictionary<string, Transform>(Transforms);
 
             var processedBoneNames = new HashSet<string> { "rootTransform" };
-            bool bakeAnimatedBoneScales = ScmlImportOptions.options?.IsNormalBoneScales ?? true;
 
             foreach (var key in animation.mainlineKeys)
             {
@@ -117,12 +116,15 @@ namespace Stui.Animations
 
                 while (brefs.Count > 0)
                 {
-                    var bref = brefs.Dequeue();
+                    var boneRef = brefs.Dequeue();
 
-                    var timeline = timelines[bref.timelineId];
+                    var timeline = timelines[boneRef.timelineId];
                     string boneName = timeline.name;
 
-                    if (processedBoneNames.Contains(boneName)) { continue; }
+                    if (processedBoneNames.Contains(boneName))
+                    {
+                        continue;
+                    }
 
                     var parentBoneNames = timeline.keys.Select(k => k.info.parentBoneName).Distinct().ToList();
                     bool parentsProcessed = parentBoneNames.All(processedBoneNames.Contains);
@@ -134,21 +136,16 @@ namespace Stui.Animations
                         {
                             string parentBoneNamesStr = string.Join(", ", parentBoneNames.Select(n => $"'{n}'"));
                             string processedBoneNamesStr = string.Join(", ", processedBoneNames.Select(n => $"'{n}'"));
-                            Debug.LogWarning($"Deadlock detected.  timeline: {timeline.name}, parentBoneNames: {parentBoneNamesStr}, processedBoneNames: {processedBoneNamesStr}");
+                            Debug.LogWarning($"AnimationBuilder: Deadlock detected.  timeline: {timeline.name}, parentBoneNames: {parentBoneNamesStr}, processedBoneNames: {processedBoneNamesStr}");
                         }
 
                         deadlockCounter = 0;
                         processedBoneNames.Add(boneName);
 
-                        if (pendingTransforms.TryGetValue(timeline.name, out Transform bone)) // Skip it if it's already "used"
+                        if (pendingTransforms.TryGetValue(timeline.name, out Transform bone)) // Skip it if it has already been seen.
                         {
                             if (buildCtx.IsCanceled) { yield break; }
                             yield return $"{buildCtx.MessagePrefix}, bone: '{timeline.name}', creating animation curves";
-
-                            if (bakeAnimatedBoneScales)
-                            {
-                                BoneBaker.BakeAnimatedBoneScales(animation, timeline, entityInfo);
-                            }
 
                             SetCurves(bone, DefaultBones[timeline.name], timeline, clip, animation);
                             pendingTransforms.Remove(timeline.name);
@@ -157,7 +154,7 @@ namespace Stui.Animations
                     else
                     {
                         deadlockCounter++;
-                        brefs.Enqueue(bref);
+                        brefs.Enqueue(boneRef);
                     }
                 }
 
@@ -1718,44 +1715,63 @@ namespace Stui.Animations
                     float tlkStartTime = tlk.time_s;
                     float tlkEndTime = nextTlk != null ? nextTlk.time_s : animation.length;
 
-                    float tlkStartValue = timelineCurve.Evaluate(TweakTime(tlkStartTime));
-                    float tlkEndValue = timelineCurve.Evaluate(TweakTime(tlkEndTime));
-
-                    // These are normalized easing curves for the mainline key and the timeline key.  The mainline
-                    // curve's output will be the input to the timeline curve.
-                    var mlkCurve = CreateCurve(mlk.curve_type, 0f, 1f, 0f, 1f, mlk.c1, mlk.c2, mlk.c3, mlk.c4);
-                    var tlkCurve = CreateCurve(tlk.curve_type, 0f, 1f, 0f, 1f, tlk.c1, tlk.c2, tlk.c3, tlk.c4);
-
-                    float mlkDuration = mlkEndTime - mlkStartTime;
-                    float tlkDuration = tlkEndTime - tlkStartTime;
-
-                    float mlkScale = mlkDuration / tlkDuration; // The mlk time span, as a percentage, relative to the tlk span.
-                    float mlkScaledOffset = (mlkStartTime - tlkStartTime) / tlkDuration; // Where within the tlk span does the mlk span start.
-
-                    const float samplesPerSecond = 60f;
-
-                    float dt = 1f / (mlkDuration * samplesPerSecond);
-
-                    List<float> samples = new List<float>();
-
-                    for (float t = 0; t <= 1f; t += dt)
+                    if (mlk.curve_type == CurveType.linear &&
+                        nextTlk != null &&
+                        Mathf.Approximately(mlkStartTime, tlkStartTime) &&
+                        Mathf.Approximately(mlkEndTime, tlkEndTime))
                     {
-                        var mlkEasing = mlkCurve.Evaluate(t);
-                        var tlkT = mlkScaledOffset + (mlkEasing * mlkScale);
-                        var tlkEasingT = tlkCurve.Evaluate(tlkT);
+                        // The mainline curve type doesn't affect the timeline curve and the timeline has keys at the
+                        // same times as the mainline so just create the segment as would be done normally...
 
-                        float sampledValue = Mathf.Lerp(tlkStartValue, tlkEndValue, tlkEasingT);
+                        float startValue = infoValue(tlk.info as T);
+                        float endValue = infoValue(nextTlk.info as T);
 
-                        samples.Add(sampledValue);
+                        allCurves.Add(CreateCurve(tlk.curve_type, tlkStartTime, tlkEndTime, startValue, endValue,
+                            tlk.c1, tlk.c2, tlk.c3, tlk.c4));
                     }
+                    else
+                    {
+                        float tlkStartValue = timelineCurve.Evaluate(TweakTime(tlkStartTime));
+                        float tlkEndValue = timelineCurve.Evaluate(TweakTime(tlkEndTime));
 
-                    // The following is done to make sure there are no problems when concatenating all the curves.
-                    samples[0] = timelineCurve.Evaluate(TweakTime(mlkStartTime));
-                    samples[samples.Count - 1] = timelineCurve.Evaluate(TweakTime(mlkEndTime));
+                        // These are normalized easing curves for the mainline key and the timeline key.  The mainline
+                        // curve's output will be the input to the timeline curve.
+                        var mlkCurve = CreateCurve(mlk.curve_type, 0f, 1f, 0f, 1f, mlk.c1, mlk.c2, mlk.c3, mlk.c4);
+                        var tlkCurve = CreateCurve(tlk.curve_type, 0f, 1f, 0f, 1f, tlk.c1, tlk.c2, tlk.c3, tlk.c4);
 
-                    var resultCurve = CurveBuilder.CurveFitter.FromAdaptiveFit(samples, mlkDuration, mlkStartTime, 0.01f);
+                        float mlkDuration = mlkEndTime - mlkStartTime;
+                        float tlkDuration = tlkEndTime - tlkStartTime;
 
-                    allCurves.Add(resultCurve);
+                        float mlkScale = mlkDuration / tlkDuration; // The mlk time span, as a percentage, relative to the tlk span.
+                        float mlkScaledOffset = (mlkStartTime - tlkStartTime) / tlkDuration; // Where within the tlk span does the mlk span start.
+
+                        const float samplesPerSecond = 60f;
+                        const float minNumSamples = 5f;
+
+                        float dt = 1f / (mlkDuration * samplesPerSecond);
+                        dt = Mathf.Min(1f / minNumSamples, dt);
+
+                        List<float> samples = new List<float>();
+
+                        for (float t = 0; t <= 1f; t += dt)
+                        {
+                            var mlkEasing = mlkCurve.Evaluate(t);
+                            var tlkT = mlkScaledOffset + (mlkEasing * mlkScale);
+                            var tlkEasingT = tlkCurve.Evaluate(tlkT);
+
+                            float sampledValue = Mathf.Lerp(tlkStartValue, tlkEndValue, tlkEasingT);
+
+                            samples.Add(sampledValue);
+                        }
+
+                        // The following is done to make sure there are no problems when concatenating all the curves.
+                        samples[0] = timelineCurve.Evaluate(TweakTime(mlkStartTime));
+                        samples[samples.Count - 1] = timelineCurve.Evaluate(TweakTime(mlkEndTime));
+
+                        var resultCurve = CurveBuilder.CurveFitter.FromAdaptiveFit(samples, mlkDuration, mlkStartTime, 0.01f);
+
+                        allCurves.Add(resultCurve);
+                    }
                 }
             }
 
@@ -2036,7 +2052,7 @@ namespace Stui.Animations
                         parentInfo = parentKeyEntry?.info;
                     }
 
-                    info.Bake(parentInfo, saveUndoData: false);
+                    info.Bake(parentInfo);
                 }
 
                 if (spatialAdapter == null)
