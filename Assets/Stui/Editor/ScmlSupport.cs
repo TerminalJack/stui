@@ -394,6 +394,8 @@ namespace Stui.Importing
 
     public class SpatialInfo
     {
+        public const string UnassignedParentBoneName = "***Unassigned***";
+
         public SpatialInfo()
         {
             x = 0f;
@@ -406,7 +408,7 @@ namespace Stui.Importing
             trueScaleX = float.NaN;
             trueScaleY = float.NaN;
             a = 1f;
-            parentBoneName = "Unknown";
+            parentBoneName = UnassignedParentBoneName;
         }
 
         public override string ToString()
