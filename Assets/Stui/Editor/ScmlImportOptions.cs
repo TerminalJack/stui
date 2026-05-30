@@ -32,11 +32,8 @@ namespace Stui.Importing
         private static readonly string _animateBoneScalesTooltip =
             "Animated Bone Scales: If your Spriter project uses this feature then selecting 'Advanced' will " +
             "create the necessary components and animation curves to support it at the highest visual quality.  " +
-            "Otherwise, the setting of 'Normal' will cause bone scales to be baked-in for each keyframe.  This is " +
-            "more performant but could result in animations that do not match Spriter's playback.  If any bones " +
-            "use non-linear curves and/or flip the scale across either the x- or y-axis, then 'Advanced' will " +
-            "likely be necessary.  Note that if a Spriter project doesn't use animated bone scales then " +
-            "enabling the 'Advanced' setting will have the same effect as using the 'Normal' setting.";
+            "Otherwise, a setting of 'Normal' will cause bone scales to be baked-in for each keyframe.  A setting " +
+            "of 'Normal' should work for most Spriter projects.";
 
         private static readonly string _animationImportStyleTooltip =
             "Animation Import Style: Where to store animation clips.  They can be stored in the prefab or in a " +
@@ -66,7 +63,7 @@ namespace Stui.Importing
         void OnEnable()
         {
             titleContent = new GUIContent("Spriter Import Options");
-            minSize = new Vector2(400, 310);
+            minSize = new Vector2(400, 240);
         }
 
         void OnGUI()

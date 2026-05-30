@@ -292,23 +292,23 @@ namespace Stui.Prefabs
                     parents[-1] = "rootTransform"; //This is where "-1 == no parent" comes in handy
 
                     if (buildCtx.IsCanceled) { yield break; }
-                    yield return $"{buildCtx.MessagePrefix}, mainline key time: {key.time_s}, processing bones";
+                    yield return $"{buildCtx.MessagePrefix}, mainline key time: {key.time_s:F3}, processing bones";
 
                     ProcessBones(parents, transforms, animation, timelines, key, defaultBones, entityInfo);
 
                     if (buildCtx.IsCanceled) { yield break; }
-                    yield return $"{buildCtx.MessagePrefix}, mainline key time: {key.time_s}, processing sprites";
+                    yield return $"{buildCtx.MessagePrefix}, mainline key time: {key.time_s:F3}, processing sprites";
 
                     ProcessSprites(parents, transforms, animation, timelines, key, defaultBones, defaultSprites, entityInfo,
                         folders, firstAnim, animation.mainlineKeys);
 
                     if (buildCtx.IsCanceled) { yield break; }
-                    yield return $"{buildCtx.MessagePrefix}, mainline key time: {key.time_s}, processing action points";
+                    yield return $"{buildCtx.MessagePrefix}, mainline key time: {key.time_s:F3}, processing action points";
 
                     ProcessActionPoints(parents, transforms, animation, timelines, key, defaultBones, defaultActionPoints, entityInfo);
 
                     if (buildCtx.IsCanceled) { yield break; }
-                    yield return $"{buildCtx.MessagePrefix}, mainline key time: {key.time_s}, processing collision rectangles";
+                    yield return $"{buildCtx.MessagePrefix}, mainline key time: {key.time_s:F3}, processing collision rectangles";
 
                     ProcessCollisionRectangles(parents, transforms, animation, timelines, key, defaultBones,
                         defaultCollisionRectangles, entityInfo, entity, firstAnim);
@@ -835,49 +835,25 @@ namespace Stui.Prefabs
             Animation animation, Dictionary<int, Timeline> timelines, MainlineKey key,
             Dictionary<string, SpatialInfo> defaultBones, SpriterEntityInfo entityInfo)
         {
-            var processedBoneNames = new HashSet<string> { "rootTransform" };
             var boneRefs = new Queue<Ref>(key.boneRefs);
-            int deadlockCounter = 0;
 
             while (boneRefs.Count > 0)
             {
-                var boneRef = boneRefs.Dequeue();
+                var bone = boneRefs.Dequeue();
+                var timeline = timelines[bone.timelineId];
+                parents[bone.id] = timeline.name;
 
-                var timeline = timelines[boneRef.timelineId];
-                string boneName = timeline.name;
-                parents[boneRef.id] = boneName;
-
-                if (processedBoneNames.Contains(boneName))
+                // We only need to go through this once, so ignore it if it's already in the dict.
+                if (!transforms.ContainsKey(timeline.name))
                 {
-                    continue;
-                }
-
-                var parentBoneNames = timeline.keys.Select(k => k.info.parentBoneName).Distinct().ToList();
-                bool parentsProcessed = parentBoneNames.All(processedBoneNames.Contains);
-                bool deadlocked = deadlockCounter > boneRefs.Count;
-
-                if (parentsProcessed || deadlocked)
-                {
-                    if (deadlocked)
+                    if (parents.ContainsKey(bone.parentRefId))
                     {
-                        string parentBoneNamesStr = string.Join(", ", parentBoneNames.Select(n => $"'{n}'"));
-                        string processedBoneNamesStr = string.Join(", ", processedBoneNames.Select(n => $"'{n}'"));
-                        Debug.LogWarning($"PrefabBuilder: Deadlock detected.  timeline: {timeline.name}, " +
-                            $"parentBoneNames: {parentBoneNamesStr}, processedBoneNames: {processedBoneNamesStr}");
+                        ProcessBone(parents, transforms, animation, defaultBones, entityInfo, timeline, bone);
                     }
-
-                    deadlockCounter = 0;
-                    processedBoneNames.Add(boneName);
-
-                    if (!transforms.ContainsKey(timeline.name))
-                    {
-                        ProcessBone(parents, transforms, animation, defaultBones, entityInfo, timeline, boneRef);
+                    else
+                    {   // If the parent cannot be found, it will probably be found later, so save it
+                        boneRefs.Enqueue(bone);
                     }
-                }
-                else
-                {
-                    deadlockCounter++;
-                    boneRefs.Enqueue(boneRef);
                 }
             }
         }
@@ -894,8 +870,7 @@ namespace Stui.Prefabs
 
             if (spriterBoneInfo == null || spriterBoneInfo.type != ObjectType.bone)
             {
-                Debug.LogWarning($"Stui: ProcessBones() was unable to find bone info for bone '{timeline.name}'.");
-                return;
+                throw new Exception($"Stui: ProcessBone() was unable to find bone info for bone '{timeline.name}'.");
             }
 
             ProcessVirtualParent(parentName, ref parentTransform, spriterBoneInfo);

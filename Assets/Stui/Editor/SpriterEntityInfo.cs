@@ -11,9 +11,9 @@ using System.Linq;
 
 namespace Stui.EntityInfo
 {
-    using Importing;
-    using Stui.Extensions;
     using UnityEditor;
+    using Importing;
+    using Extensions;
     using Debug = UnityEngine.Debug;
 
     public class VarInstanceInfo
@@ -177,6 +177,10 @@ namespace Stui.EntityInfo
             _entityName = entity.name;
 
             if (buildCtx.IsCanceled) { yield break; }
+            yield return $"{buildCtx.MessagePrefix}, checking for invalid mainline or timeline key times";
+            CheckForInvalidKeyTimes(entity);
+
+            if (buildCtx.IsCanceled) { yield break; }
             yield return $"{buildCtx.MessagePrefix}, checking for missing mainline time=0 keys";
             CheckForMissingMainlineTime0Keys(entity);
 
@@ -267,6 +271,42 @@ namespace Stui.EntityInfo
             if (buildCtx.IsCanceled) { yield break; }
             yield return $"{buildCtx.MessagePrefix}, checking for bones that use alpha";
             CheckForBoneAlphaUse(entity);
+        }
+
+        private void CheckForInvalidKeyTimes(Entity entity)
+        {
+            bool invalidTimesEncountered = false;
+
+            foreach (var anim in entity.animations)
+            {
+                foreach (var mlk in anim.mainlineKeys)
+                {
+                    if (mlk.time_s < 0 || mlk.time_s > anim.length + 1f)
+                    {
+                        invalidTimesEncountered = true;
+                        Debug.LogWarning($"Entity: {entity.name}, animation: {anim.name} has an invalid mainline " +
+                            $"key time of {mlk.time_s:F3}");
+                    }
+                }
+
+                foreach (var timeline in anim.timelines)
+                {
+                    foreach (var tlk in timeline.keys)
+                    {
+                        if (tlk.time_s < 0 || tlk.time_s > anim.length + 1f)
+                        {
+                            invalidTimesEncountered = true;
+                            Debug.LogWarning($"Entity: {entity.name}, animation: {anim.name}, timeline: {timeline.name} " +
+                                $"has an invalid timeline key time of {tlk.time_s:F3}");
+                        }
+                    }
+                }
+            }
+
+            if (invalidTimesEncountered)
+            {   // Invalid times will cause the importer to hang so don't bother trying to import this entity.
+                throw new System.Exception("SCML File is corrupt.  Cannot process.");
+            }
         }
 
         private void CheckForMissingMainlineTime0Keys(Entity entity)
@@ -559,14 +599,22 @@ namespace Stui.EntityInfo
                     }
                 }
 
+                bool normalBoneScaleAnimationEnabled = ScmlImportOptions.options?.IsNormalBoneScales ?? true;
+
+                string advancedSupportNote = normalBoneScaleAnimationEnabled
+                    ? "It may be necessary to use the 'Advanced' Animated Bone Scale option."
+                    : "";
+
                 if (hasNonlinearCurveTypes)
                 {   // Use regular logging.  The user may need to use advanced animated bone scale support.
-                    Debug.Log($"{prefix}Entity '{entity.name}' has one or more animated bones with non-linear curve types.");
+                    Debug.Log($"{prefix}Entity '{entity.name}' has one or more animated bones with non-linear " +
+                        $"curve types.  {advancedSupportNote}");
                 }
 
                 if (hasScaleFlips)
                 {   // Use regular logging.  The user may need to use advanced animated bone scale support.
-                    Debug.Log($"{prefix}Entity '{entity.name}' has one or more animated bone scale flips.");
+                    Debug.Log($"{prefix}Entity '{entity.name}' has one or more animated bone scale " +
+                        $"flips.  {advancedSupportNote}");
                 }
 
                 var namesOfBonesWithAnimatedScales = boneScaleInfos.Select(i => i.boneName).Distinct().OrderBy(n => n).ToList();

@@ -107,40 +107,19 @@ namespace Stui.Animations
             // This Dictionary will shrink in size for every transform (aka timeline) that is used in the animation.
             var pendingTransforms = new Dictionary<string, Transform>(Transforms);
 
-            var processedBoneNames = new HashSet<string> { "rootTransform" };
-
             foreach (var key in animation.mainlineKeys)
             {
+                var processedBoneRefIds = new HashSet<int>();
                 var brefs = new Queue<Ref>(key.boneRefs);
-                int deadlockCounter = 0;
 
                 while (brefs.Count > 0)
                 {
-                    var boneRef = brefs.Dequeue();
+                    var bref = brefs.Dequeue();
 
-                    var timeline = timelines[boneRef.timelineId];
-                    string boneName = timeline.name;
-
-                    if (processedBoneNames.Contains(boneName))
+                    if (bref.parentRefId < 0 || processedBoneRefIds.Contains(bref.parentRefId))
                     {
-                        continue;
-                    }
-
-                    var parentBoneNames = timeline.keys.Select(k => k.info.parentBoneName).Distinct().ToList();
-                    bool parentsProcessed = parentBoneNames.All(processedBoneNames.Contains);
-                    bool deadlocked = deadlockCounter > brefs.Count;
-
-                    if (parentsProcessed || deadlocked)
-                    {
-                        if (deadlocked)
-                        {
-                            string parentBoneNamesStr = string.Join(", ", parentBoneNames.Select(n => $"'{n}'"));
-                            string processedBoneNamesStr = string.Join(", ", processedBoneNames.Select(n => $"'{n}'"));
-                            Debug.LogWarning($"AnimationBuilder: Deadlock detected.  timeline: {timeline.name}, parentBoneNames: {parentBoneNamesStr}, processedBoneNames: {processedBoneNamesStr}");
-                        }
-
-                        deadlockCounter = 0;
-                        processedBoneNames.Add(boneName);
+                        var timeline = timelines[bref.timelineId];
+                        processedBoneRefIds.Add(bref.id);
 
                         if (pendingTransforms.TryGetValue(timeline.name, out Transform bone)) // Skip it if it has already been seen.
                         {
@@ -153,8 +132,7 @@ namespace Stui.Animations
                     }
                     else
                     {
-                        deadlockCounter++;
-                        brefs.Enqueue(boneRef);
+                        brefs.Enqueue(bref);
                     }
                 }
 
