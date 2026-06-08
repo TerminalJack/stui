@@ -2009,25 +2009,35 @@ namespace Stui.Animations
 
                 if (!info.haveBaked && SpriterEntityInfo.IsBakedBoneOrObject(spriterInfo, animation))
                 {
-                    var currentTime = key.time_s;
-                    var parentBoneName = key.info.parentBoneName; // May be virtual.
-                    SpatialInfo parentInfo = null;
+                    // The spatial info for this timeline's parent (possibly virtual) for this key frame.
+                    SpatialInfo parentInfo =
+                    (
+                        from mlk in animation.mainlineKeys
 
-                    var parentTimeline = animation.timelines
-                        .FirstOrDefault(t => t.name == parentBoneName);
+                        let isBone = timeline.objectType == ObjectType.bone
+                        let refs = isBone ? mlk.boneRefs : mlk.objectRefs
 
-                    if (parentTimeline != null)
+                        let mlkRef = refs.FirstOrDefault(r => r.timelineId == timeline.id && r.timelineKeyId == key.id)
+
+                        let parentRef = mlk.boneRefs.FirstOrDefault(r => r.id == mlkRef?.parentRefId) // May be null.
+
+                        let parentTimeline = parentRef != null
+                            ? animation.timelines.FirstOrDefault(t => t.id == parentRef.timelineId)
+                            : null
+
+                        let parentTlk = parentTimeline != null
+                            ? parentTimeline.keys.FirstOrDefault(k => k.id == parentRef.timelineKeyId)
+                            : null
+
+                        select parentTlk?.info // May be null.
+                    )
+                    .FirstOrDefault();
+
+                    if (parentInfo != null && !parentInfo.haveBaked)
                     {
-                        var sortedParentKeys = parentTimeline.keys
-                            .OrderBy(k => k.time_s)
-                            .ToList();
-
-                        // pick <= currentTime, or if none, > currentTime
-                        var parentKeyEntry = sortedParentKeys
-                            .LastOrDefault(k => k.time_s <= currentTime)
-                        ?? sortedParentKeys.FirstOrDefault(k => k.time_s > currentTime);
-
-                        parentInfo = parentKeyEntry?.info;
+                        Debug.LogWarning($"For entity: {entityInfo.EntityName}, animation: {animation.name}, " +
+                            $"timeline: {timeline.name}, time: {key.time_s:F3}: The timeline key info is being baked " +
+                            "but its parent hasn't been baked yet.");
                     }
 
                     info.Bake(parentInfo);

@@ -10,7 +10,7 @@ One prefab will be generated for each of the entities in the `.scml` file.  The 
 * **Animator controllers** <br>
 One animator controller will be generated for each of the entities.  An animation state will be created for each of the entity's animations.
 * **Animation clips** <br>
-One animation clip will be generated for each of an entity's animations.  These are standard Unity animation clips that can be played/scrubbed in-editor using Unity's Animator window.  If the structure of the Spriter file permits it, you can use Unity animation features such as crossfade and transition blending.
+One animation clip will be generated for each of an entity's animations.  These are standard Unity animation clips that can be played/scrubbed in-editor using Unity's Animator window.  If the structure of the Spriter file permits it, you can use Unity animation features such as crossfade, transition blending, blend trees, and animation layers.
 
 # Where to Get Stui and How to Install it
 
