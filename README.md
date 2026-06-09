@@ -447,13 +447,35 @@ On the flip side, contracting an animation in Unity risks having the editor drop
 
 One of the major benefits of converting Spriter animations into native Unity animation clips is that you can take advantage of Unity's animation layering system.  Animation layers let multiple clips play at the same time while targeting different parts of a character.  For example, the upper body can play an attack animation while the lower body continues a run cycle.
 
-Unity typically uses `Avatar Masks` to control which _bones_ (transforms) a layer affects.  However, 2D animations--whether produced by the importer or not--animate far more than just transforms.  They swap sprites, adjust alpha, toggle visibility, and modify other non-transform properties. `Avatar Masks` do not filter these properties, which means one layer can unintentionally override another even when masked correctly.
+Unity uses `Avatar Masks` to control which _bones_ (transforms) a layer affects.  However, 2D animations--whether produced by the importer or not--animate far more than just transforms.  They swap sprites, adjust alpha, toggle visibility, and modify other non-transform properties. `Avatar Masks` do not filter these properties, which means one layer can unintentionally override another even when masked correctly.
 
-Because of this, if you plan to use Unity animation layers, it's best to split your Spriter animations according to the layers you intend to use in Unity, rather than relying on `Avatar Masks`.  Each Spriter animation should animate only the properties intended for its corresponding Unity layer.
+This is something to be mindful of if you plan to use Unity animation layers.  Essentially, `Avatar Masks` can't be relied on *solely* to make layers work properly.  In addition to `Avatar Masks`, you may need to make changes to some of your Spriter animations to prevent them from interfering with other animation layers.
 
-For example, if your Unity `Animator Controller` uses six layers (upper body, lower body, wings, tail, eyes, mouth), then an "idle" animation may need to be split into six separate Spriter animations.  The good news is that many of these (wings, tail, eyes, mouth) can likely be reused across multiple animator states.
+> How do you create an `Avatar Mask` for an imported prefab?  The following quick-and-dirty script can be used to create one.  Note that it will place the newly created mask file in the root of your project (`Assets/`).
 
-In short: perform your "masking" at the Spriter project animation level, where you have full control over which properties each animation touches.
+```cs
+using UnityEditor;
+using UnityEngine;
+
+public class AvatarMaskMaker
+{
+    [MenuItem("CustomTools/MakeAvatarMask")]
+    private static void MakeAvatarMask()
+    {
+        GameObject activeGameObject = Selection.activeGameObject;
+
+        if (activeGameObject != null)
+        {
+            AvatarMask avatarMask = new AvatarMask();
+
+            avatarMask.AddTransformPath(activeGameObject.transform);
+
+            var path = string.Format("Assets/{0}.mask", activeGameObject.name.Replace(':', '_'));
+            AssetDatabase.CreateAsset(avatarMask, path);
+        }
+    }
+}
+```
 
 # Known Issues.
 
