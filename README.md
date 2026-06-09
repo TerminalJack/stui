@@ -443,6 +443,18 @@ On the flip side, contracting an animation in Unity risks having the editor drop
 
 >Stretching and contracting an animation in Spriter has its risks as well.  As discussed above, creators will often place a key just 1 ms after another with the intention of instantly changing the key value(s).  Stretching the animation in this case will likely (see above) cause the value to tween between the two keys, rather than being instant.  So be mindful in either case.
 
+## **Unity Animation Layers and Avatar Masks**
+
+One of the major benefits of converting Spriter animations into native Unity animation clips is that you can take advantage of Unity's animation layering system.  Animation layers let multiple clips play at the same time while targeting different parts of a character.  For example, the upper body can play an attack animation while the lower body continues a run cycle.
+
+Unity typically uses `Avatar Masks` to control which _bones_ (transforms) a layer affects.  However, 2D animations--whether produced by the importer or not--animate far more than just transforms.  They swap sprites, adjust alpha, toggle visibility, and modify other non-transform properties. `Avatar Masks` do not filter these properties, which means one layer can unintentionally override another even when masked correctly.
+
+Because of this, if you plan to use Unity animation layers, it's best to split your Spriter animations according to the layers you intend to use in Unity, rather than relying on `Avatar Masks`.  Each Spriter animation should animate only the properties intended for its corresponding Unity layer.
+
+For example, if your Unity `Animator Controller` uses six layers (upper body, lower body, wings, tail, eyes, mouth), then an "idle" animation may need to be split into six separate Spriter animations.  The good news is that many of these (wings, tail, eyes, mouth) can likely be reused across multiple animator states.
+
+In short: perform your "masking" at the Spriter project animation level, where you have full control over which properties each animation touches.
+
 # Known Issues.
 
 During an import, having a Spriter project open in the Spriter application can (infrequently) cause the import to fail.  You will get an error regarding file access.  You may need to close the Spriter application in this case.
